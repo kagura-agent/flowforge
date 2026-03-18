@@ -53,15 +53,24 @@ program
   .action((opts) => {
     try {
       const result = engine.next(opts.branch);
-      console.log(`\n${result.from} → ${result.to}${result.branchTaken ? ` (${result.branchTaken})` : ""}\n`);
-      printStatus();
+      if (result.terminal) {
+        console.log(`\n✅ ${result.from} → (end) — Workflow complete!\n`);
+      } else {
+        console.log(`\n${result.from} → ${result.to}${result.branchTaken ? ` (${result.branchTaken})` : ""}\n`);
+        printStatus();
+      }
       if (opts.notify) {
-        const s = engine.status();
-        console.log("---NOTIFY---");
-        console.log(`🔄 Workflow 进度：${result.from} → ${s.currentNode}`);
-        console.log(`📋 当前任务：${s.task.trim().split("\n")[0]}`);
-        if (s.branches) {
-          console.log(`⑂ ${s.branches.length} 个分支待决策`);
+        if (result.terminal) {
+          console.log("---NOTIFY---");
+          console.log(`✅ Workflow 完成：${result.from} → 结束`);
+        } else {
+          const s = engine.status();
+          console.log("---NOTIFY---");
+          console.log(`🔄 Workflow 进度：${result.from} → ${s.currentNode}`);
+          console.log(`📋 当前任务：${s.task.trim().split("\n")[0]}`);
+          if (s.branches) {
+            console.log(`⑂ ${s.branches.length} 个分支待决策`);
+          }
         }
       }
     } catch (e: any) {
@@ -135,7 +144,9 @@ function printStatus() {
   const s = engine.status();
   console.log(`\n📍 Current: ${s.currentNode}`);
   console.log(`📋 Task: ${s.task}`);
-  if (s.branches) {
+  if (s.terminal) {
+    console.log(`\n🏁 This is a terminal node. Use: flowforge next to finish.`);
+  } else if (s.branches) {
     console.log(`\nBranches:`);
     for (let i = 0; i < s.branches.length; i++) {
       console.log(`  ${i + 1}. ${s.branches[i].condition} → ${s.branches[i].next}`);

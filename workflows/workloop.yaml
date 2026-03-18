@@ -23,7 +23,7 @@ nodes:
       4. 提交并 push
       5. 在 PR 上回复 reviewer
       处理完所有反馈后汇报结果。
-    next: followup
+    terminal: true
 
   find_work:
     task: |
@@ -90,4 +90,4 @@ nodes:
     task: |
       这一轮工作完成。记录今天的工作到 memory 文件。
       汇报本轮成果。
-    next: followup
+    terminal: true

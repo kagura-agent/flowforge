@@ -47,6 +47,7 @@ export function status(workflowName?: string) {
     branches: node.branches || null,
     hasNext: !!node.next,
     nextNode: node.next || null,
+    terminal: !!node.terminal,
   };
 }
 
@@ -74,8 +75,21 @@ export function next(branch?: number, workflowName?: string) {
     branchTaken = chosen.condition;
   } else if (node.next) {
     nextNode = node.next;
+  } else if (node.terminal) {
+    // Terminal node — close history and mark instance as done
+    db.closeHistory(inst.id, inst.current_node, null);
+    db.setInstanceStatus(inst.id, "done");
+    return {
+      from: inst.current_node,
+      to: "(end)",
+      branchTaken: null,
+      task: "",
+      branches: null,
+      hasNext: false,
+      terminal: true,
+    };
   } else {
-    throw new Error("Node has no next or branches — this should not happen");
+    throw new Error("Node has no next, branches, or terminal — this should not happen");
   }
 
   // Close current history entry, move to next node, open new history entry

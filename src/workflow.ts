@@ -9,6 +9,7 @@ export interface WorkflowNode {
   task: string;
   next?: string;
   branches?: Branch[];
+  terminal?: boolean;
 }
 
 export interface Workflow {
@@ -38,8 +39,8 @@ export function parseWorkflow(content: string): Workflow {
 
   for (const [name, node] of Object.entries(wf.nodes)) {
     if (!node.task) throw new Error(`Node '${name}' missing 'task'`);
-    if (!node.next && !node.branches) {
-      throw new Error(`Node '${name}' must have 'next' or 'branches'`);
+    if (!node.next && !node.branches && !node.terminal) {
+      throw new Error(`Node '${name}' must have 'next', 'branches', or 'terminal: true'`);
     }
     if (node.next && typeof node.next !== "string") {
       throw new Error(`Node '${name}' has invalid 'next'`);
