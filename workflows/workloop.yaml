@@ -27,7 +27,7 @@ nodes:
 
   find_work:
     task: |
-      用 gogetajob scan 扫描目标公司（NVIDIA/NemoClaw, BlockRunAI/ClawRouter, ValueCell-ai/ClawX）。
+      用 gogetajob scan --all 扫描所有活跃公司（公司列表从 gogetajob DB 读取，不硬编码）。
       用 gogetajob feed 查看可做的 issue。
       选择一个最有价值的 issue：优先选真实 bug > 测试覆盖 > 文档 > feature。
       确认没有竞争 PR。
