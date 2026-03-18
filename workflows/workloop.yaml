@@ -82,9 +82,22 @@ nodes:
       这一步不能跳过。做完所有检查后汇报结果。
     branches:
       - condition: "CI 通过，review 反馈已处理（或没有反馈）"
-        next: done
+        next: reflect
       - condition: "有问题需要修改"
         next: implement
+
+  reflect:
+    task: |
+      停下来反思本轮工作：
+      1. 过程中有没有卡住的地方？为什么卡？怎么避免？
+      2. 使用的工具（gogetajob、gh、flowforge 等）有没有问题？
+         - 有 bug → 去工具 repo 提 issue 或自己修
+         - 不好用 → 记下来，考虑改进
+      3. 这个 workflow 本身需要调整吗？哪个节点可以优化？
+      4. 有没有重复犯以前的错误？检查 memory 里记录的教训
+      5. 下一轮可以怎么做得更好？
+      把反思结果记到 memory/YYYY-MM-DD.md 里。
+    next: done
 
   done:
     task: |
