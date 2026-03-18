@@ -1,0 +1,24 @@
+{
+  "name": "flowforge",
+  "version": "0.1.0",
+  "description": "Enforced workflow engine for AI agents",
+  "type": "module",
+  "bin": {
+    "flowforge": "./bin/flowforge.js"
+  },
+  "scripts": {
+    "build": "esbuild src/index.ts --bundle --platform=node --target=node18 --format=esm --outfile=dist/flowforge.js --external:better-sqlite3 --banner:js=\"import { createRequire } from 'module'; const require = createRequire(import.meta.url);\""
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.0.0",
+    "commander": "^12.0.0",
+    "js-yaml": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.0",
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^20.0.0",
+    "esbuild": "^0.21.0",
+    "typescript": "^5.4.0"
+  }
+}

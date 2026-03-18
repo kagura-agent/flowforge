@@ -1,0 +1,86 @@
+name: contribute
+description: "Open source contribution — enforced workflow"
+
+context:
+  - repo
+  - issue_number
+
+states:
+  study:
+    description: "Understand the project before touching code"
+    gates:
+      - name: read_contributing
+        type: manual
+        description: "Read CONTRIBUTING.md and understand conventions"
+      - name: no_competing_pr
+        type: auto
+        command: "gh pr list -R {{repo}} --search 'closes #{{issue_number}} OR fixes #{{issue_number}}' --state open --json number --jq length"
+        expect: "0"
+        description: "No competing PRs exist for this issue"
+    next: implement
+
+  implement:
+    description: "Write the fix or feature"
+    gates:
+      - name: tests_pass
+        type: auto
+        command: "npm test 2>&1; echo $?"
+        expect_exit: 0
+        description: "All tests pass locally"
+      - name: changes_committed
+        type: auto
+        command: "git status --porcelain"
+        expect: ""
+        description: "All changes committed (clean working tree)"
+    next: submit
+
+  submit:
+    description: "Push branch and create PR"
+    gates:
+      - name: pr_exists
+        type: auto
+        command: "gh pr view --json number --jq .number 2>/dev/null || echo ''"
+        expect_not: ""
+        description: "PR has been created on GitHub"
+    next: post_submit
+
+  post_submit:
+    description: "Check CI and automated reviews (DO NOT skip this)"
+    gates:
+      - name: wait_for_ci
+        type: wait
+        duration: 3m
+        description: "Wait for CI to start running"
+      - name: ci_status
+        type: auto
+        command: "gh pr checks --json state --jq '[.[] | select(.state != \"SUCCESS\" and .state != \"SKIPPED\" and .state != \"PENDING\")] | length'"
+        expect: "0"
+        description: "No failed CI checks"
+      - name: review_comments_checked
+        type: auto
+        command: "gh pr view --json comments,reviews --jq '(.comments | length) + (.reviews | length)'"
+        expect_gte: "0"
+        description: "Checked for review comments"
+      - name: feedback_addressed
+        type: manual
+        description: "All automated review feedback addressed (or confirmed none exists)"
+    next: await_review
+
+  await_review:
+    description: "Wait for human maintainer review"
+    gates:
+      - name: maintainer_reviewed
+        type: auto
+        command: "gh pr view --json reviewDecision --jq '.reviewDecision // \"PENDING\"'"
+        expect_not: "PENDING"
+        description: "Maintainer has submitted a review"
+    next: done
+
+  done:
+    description: "Contribution complete"
+    terminal: true
+
+enforcement:
+  block_parallel: true
+  require_reason_for_force: true
+  log_violations: true
