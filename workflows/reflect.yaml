@@ -1,0 +1,50 @@
+name: reflect
+description: "反思循环 — 每 30 分钟由 heartbeat 触发，思考→行动"
+start: review
+
+nodes:
+  review:
+    task: |
+      回顾最近的活动（对话、任务、打工）：
+      1. 这段时间做了什么？简单列出
+      2. 读 memory/YYYY-MM-DD.md 和 IDEAS.md，对比实际发生的事
+      3. 有没有承诺了但还没做的？
+      汇报回顾结果。
+    branches:
+      - condition: "有值得深入反思的内容"
+        next: think
+      - condition: "什么都没发生（无对话、无任务）"
+        next: silent
+
+  think:
+    task: |
+      针对回顾发现的内容，深入思考：
+      1. **遗漏的火花** — 对话或工作中冒出了什么想法没记录？
+         - 有 → 准备 memex 卡片内容和/或 IDEAS.md 条目
+      2. **重复的错误** — 这次犯的错以前犯过吗？检查 memory 和 memex
+         - 是重复 → 分析为什么又犯了，需要什么"牌子"
+      3. **学到的新东西** — 有没有新的认知、模式、洞察？
+         - 有 → 准备 memex 卡片，注意加 [[双向链接]]
+      4. **承诺差距** — 说了要做但没做的，为什么？
+      汇报思考结果和计划采取的行动。
+    branches:
+      - condition: "有需要记录或行动的"
+        next: act
+      - condition: "想了一圈确实没什么"
+        next: silent
+
+  act:
+    task: |
+      执行思考阶段决定的行动：
+      1. 写 memex 卡片（npx @touchskyer/memex write <slug>）
+      2. 更新 IDEAS.md
+      3. 更新 memory/YYYY-MM-DD.md
+      4. 如果发现了重复错误，更新 SOUL.md 或相关 skill 加"牌子"
+      5. 如果有未兑现的承诺，要么现在做，要么明确记录为待办
+      完成后告诉 Luna 你做了什么、学到了什么。
+    terminal: true
+
+  silent:
+    task: |
+      确实没有需要反思的内容。回复 HEARTBEAT_OK。
+    terminal: true
