@@ -41,11 +41,12 @@ nodes:
   study:
     task: |
       深入研究选中的项目和 issue：
-      1. 读 CONTRIBUTING.md
-      2. 理解相关代码模块的结构
-      3. 确认 issue 的根因或需求
-      4. 确认没有人在做同一个 issue
-      5. 评估是否真的能在这个 repo 修（不是上游问题）
+      1. 先读 field-notes/projects/ 里对应的田野笔记（如果有的话），带着已有认知进入
+      2. 读 CONTRIBUTING.md
+      3. 理解相关代码模块的结构
+      4. 确认 issue 的根因或需求
+      5. 确认没有人在做同一个 issue
+      6. 评估是否真的能在这个 repo 修（不是上游问题）
       汇报你的理解和实现计划。
     branches:
       - condition: "issue 可做，计划明确"
@@ -96,6 +97,12 @@ nodes:
       3. 这个 workflow 本身需要调整吗？哪个节点可以优化？
       4. 有没有重复犯以前的错误？检查 memory 里记录的教训
       5. 下一轮可以怎么做得更好？
+      6. **更新田野笔记**（field-notes/projects/对应项目.md）：
+         - 新项目：创建笔记文件，记录架构、模式、第一印象
+         - 已有项目：追加新发现，不重复已有内容
+         - 重点记：架构洞察、坑、设计模式、代码质量、维护者风格
+         - 不记 PR 编号和流水账，记学到了什么
+         - git commit && git push 到 kagura-agent/field-notes
       把反思结果记到 memory/YYYY-MM-DD.md 里。
     next: done
 
