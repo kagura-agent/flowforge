@@ -39,7 +39,10 @@ nodes:
       1. 写 memex 卡片（npx @touchskyer/memex write <slug>）
       2. 更新 IDEAS.md
       3. 更新 memory/YYYY-MM-DD.md
-      4. 如果发现了重复错误，更新 SOUL.md 或相关 skill 加"牌子"
+      4. 如果发现了重复错误，在下次一定会读到的地方加防护提醒：
+         - 行为层面的 → 更新 SOUL.md 的 Beliefs
+         - 工作流程的 → 更新 FlowForge workflow 对应节点
+         - 特定工具的 → 更新 TOOLS.md 或相关 skill
       5. 如果有未兑现的承诺，要么现在做，要么明确记录为待办
       完成后告诉 Luna 你做了什么、学到了什么。
     terminal: true
