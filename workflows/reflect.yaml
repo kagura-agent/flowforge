@@ -22,11 +22,11 @@ nodes:
       1. **遗漏的火花** — 对话或工作中冒出了什么想法没记录？
          - 有 → 准备 memex 卡片内容和/或 IDEAS.md 条目
       2. **重复的错误** — 这次犯的错以前犯过吗？检查 memory 和 memex
-         - 是重复 → 分析为什么又犯了，需要什么"牌子"
+         - 是重复 → 分析为什么又犯了，根因是什么
       3. **学到的新东西** — 有没有新的认知、模式、洞察？
-         - 有 → 准备 memex 卡片，注意加 [[双向链接]]
-      4. **承诺差距** — 说了要做但没做的，为什么？
-      汇报思考结果和计划采取的行动。
+         - 有 → 准备 memex 卡片内容，想好 [[双向链接]] 关联哪些已有卡片
+      4. **承诺差距** — 说了要做但没做的，为什么？是忘了还是优先级变了？
+      汇报思考结果，列出具体要执行的行动清单。
     branches:
       - condition: "有需要记录或行动的"
         next: act
@@ -35,16 +35,29 @@ nodes:
 
   act:
     task: |
-      执行思考阶段决定的行动：
-      1. 写 memex 卡片（npx @touchskyer/memex write <slug>）
-      2. 更新 IDEAS.md
-      3. 更新 memory/YYYY-MM-DD.md
-      4. 如果发现了重复错误，在下次一定会读到的地方加防护提醒：
-         - 行为层面的 → 更新 SOUL.md 的 Beliefs
-         - 工作流程的 → 更新 FlowForge workflow 对应节点
-         - 特定工具的 → 更新 TOOLS.md 或相关 skill
-      5. 如果有未兑现的承诺，要么现在做，要么明确记录为待办
-      完成后告诉 Luna 你做了什么、学到了什么。
+      逐项执行 think 阶段产出的行动清单：
+
+      **记录新知识：**
+      - 写 memex 卡片：echo '---\ntitle: 标题\ncreated: YYYY-MM-DD\nsource: 来源\n---\n内容，用 [[slug]] 链接相关卡片' | npx @touchskyer/memex write <slug>
+      - 写完后跑 npx @touchskyer/memex links 确认链接网络更新了
+
+      **记录火花：**
+      - 追加到 IDEAS.md，格式：`- YYYY-MM-DD: 内容`
+
+      **记录事实：**
+      - 更新 memory/YYYY-MM-DD.md，记录发生了什么
+
+      **防止重复犯错：**
+      - 行为层面的教训 → 在 SOUL.md 的 Beliefs 部分追加新信念
+      - 工作流程的教训 → 编辑 FlowForge workflow 对应节点的 task 描述，加入具体提醒
+      - 特定工具的教训 → 更新 TOOLS.md 或对应 skill 文件
+
+      **处理未兑现的承诺：**
+      - 能现在做的 → 直接做
+      - 不能现在做的 → 写入 memory/YYYY-MM-DD.md 标记为待办，说明原因
+
+      **最后：**
+      - 告诉 Luna 你做了什么、学到了什么（简洁，不要流水账）
     terminal: true
 
   silent:
