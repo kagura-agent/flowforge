@@ -12,10 +12,13 @@ nodes:
       3. 有没有新冒出来的项目或趋势
       4. 核心问题：**业界在做 agent 的什么？钱和注意力往哪里流？**
       5. 跟我们的直觉对比：我们感受到的问题（信任、贡献信誉等）是不是真问题？
+      6. **看人**：有没有值得研究的高效贡献者？（高 merge rate、跨项目、特定模式）
       汇报侦察结果。
     branches:
       - condition: "发现了值得深入研究的方向或项目"
         next: deep_read
+      - condition: "发现了值得研究的贡献者"
+        next: deep_read_contributor
       - condition: "没有新发现，跟进已关注项目"
         next: followup
       - condition: "什么都没有"
@@ -49,6 +52,22 @@ nodes:
          - 跟我们的方向有什么关联？
       4. 带着问题读，不是漫无目的地浏览
       汇报你的理解和发现。
+    next: note
+
+  deep_read_contributor:
+    task: |
+      深入研究一个高效贡献者的模式：
+      1. 列出这个人最近的 merged PR（gh pr list --author X --state merged）
+      2. 分析模式：
+         - 选题策略：什么类型的 issue？bug fix / feature / test / docs / refactor？
+         - PR 大小和周转时间：小而快 vs 大而慢？
+         - 沟通方式：PR description 怎么写？怎么回应 review？
+         - 跨项目还是深耕一个？
+      3. 提炼可复用的策略：
+         - 什么让他的 PR 容易被 merge？
+         - 他是怎么选 issue 的？（label？最新？easy-first？）
+         - 有没有我可以直接学的工作流？
+      汇报分析结果。
     next: note
 
   note:
