@@ -39,7 +39,7 @@ nodes:
       - condition: "找到了合适的 issue"
         next: study
       - condition: "没有合适的 issue 可做"
-        next: done
+        next: reflect
 
   study:
     task: |
