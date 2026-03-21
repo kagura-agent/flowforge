@@ -1,5 +1,5 @@
 name: reflect
-description: "反思循环 — 每 30 分钟由 heartbeat 触发，思考→行动"
+description: "反思循环 — 由 memoryFlush/手动触发，review→think→act"
 start: review
 
 nodes:
@@ -50,12 +50,13 @@ nodes:
 
       **防止重复犯错 / 自我演化：**
       - 行为层面的教训 → 更新 SOUL.md 的 Beliefs
-      - 工作习惯的调整 → 更新 HEARTBEAT.md
+      - 工作习惯的调整 → 更新 HEARTBEAT.md 或 NUDGE.md
       - 工作流程的教训 → 编辑 FlowForge workflow 对应节点
       - 工作方式的调整 → 更新 AGENTS.md
       - 特定工具的教训 → 更新 TOOLS.md 或对应 skill 文件
-      - 如果修改了 SOUL.md / AGENTS.md / HEARTBEAT.md / IDENTITY.md：
-        cd ~/.openclaw/workspace && git add SOUL.md AGENTS.md HEARTBEAT.md IDENTITY.md && git commit -m "reflect: 简述改了什么" && git push origin master
+      - 如果修改了 SOUL.md / AGENTS.md / HEARTBEAT.md / IDENTITY.md / NUDGE.md：
+        1. workspace commit: cd ~/.openclaw/workspace && git add -A && git commit -m "reflect: 简述改了什么"
+        2. dna repo 同步: cd /tmp/dna && git pull origin master && cp ~/.openclaw/workspace/{SOUL,AGENTS,HEARTBEAT,IDENTITY,NUDGE}.md . && git add -A && git commit -m "reflect: 简述改了什么" && git push origin master
 
       **处理未兑现的承诺：**
       - 能现在做的 → 直接做
