@@ -48,12 +48,22 @@ nodes:
          a. cat ~/.openclaw/workspace/knowledge-base/projects/<项目名>.md — 田野笔记
          b. cat ~/self-improving/projects/<项目名>.md 2>/dev/null — 执行改进笔记
          c. 如果两个文件都不存在，说明这是第一次打这个 repo，要特别小心
-      2. 读 CONTRIBUTING.md
-      3. 理解相关代码模块的结构
-      4. 确认 issue 的根因或需求
-      5. 确认没有人在做同一个 issue
-      6. 评估是否真的能在这个 repo 修（不是上游问题）
-      汇报你的理解和实现计划，包含从笔记中读到的关键信息（维护者偏好、CI 注意事项等）。
+      2. **学习维护者**（不能跳过）：
+         a. 读维护者最近 merged 的 2-3 个 PR（gh pr list --repo X --state merged --limit 3）
+         b. 注意：他们怎么写测试？怎么处理边界？PR 描述什么格式？
+         c. 记录学到的具体技巧到田野笔记
+      3. 读 CONTRIBUTING.md
+      4. 理解相关代码模块的结构
+      5. 确认 issue 的根因或需求
+      6. 确认没有人在做同一个 issue（检查 issue 下的关联 PR 和评论）
+      7. 评估是否真的能在这个 repo 修（不是上游问题）
+      8. **提 PR 前 5 问**（全过才提）：
+         a. 这个 PR 只解决一个问题吗？
+         b. 上游没有已有修复或竞争 PR 吗？
+         c. 我读了 CONTRIBUTING.md 和最近的 merge 模式吗？
+         d. 我能验证这个修复吗？
+         e. open PR 数量没到上限吗？
+      汇报你的理解和实现计划，包含从笔记和维护者 PR 中学到的关键信息。
     branches:
       - condition: "issue 可做，计划明确"
         next: implement
