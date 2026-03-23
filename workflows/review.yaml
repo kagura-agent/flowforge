@@ -1,5 +1,5 @@
 name: review
-description: "每日进化检查点 — 自检 + 审计 + 修正 + 提案"
+description: "每日进化检查点 — 自检 + 写日志（3:00 AM）"
 start: tool_review
 
 nodes:
@@ -37,64 +37,24 @@ nodes:
       3. DNA 文件之间一致吗？
     branches:
       - condition: "完成"
-        next: audit
-
-  audit:
-    task: |
-      Spawn 审计员校验 review 结论。审计员需要：
-      1. 常规审计：验证不充分？数据误读？叙事包装？遗漏？
-      2. 工具 review 质量：每个工具是否五个问题都回答了？每个回答有实际内容吗？有遗漏的工具吗？
-      3. 审计员自己也要遵守基本纪律（查数据、对照源码、检查实际路径）
-    branches:
-      - condition: "审计完成"
-        next: fix
-
-  fix:
-    task: |
-      根据审计员反馈，逐条修正 review 结论：
-      1. 读审计反馈的每条发现
-      2. 对每条发现：认可 → 补查数据并修正结论；不认可 → 说明为什么（附证据）
-      3. 审计员说遗漏的工具 → 补做五问
-      4. 审计员说回答草率的 → 补充实际内容
-      5. 更新 review 记录，标注哪些结论被修正了
-      修正后的版本才是最终版本。
-    branches:
-      - condition: "所有审计反馈都逐条处理了"
         next: write_log
 
   write_log:
     task: |
-      将最终版本（review + 审计反馈 + 修正）写入两个地方：
-      1. evolution-log/当天日期.md — 完整记录
+      将 review 结果写入两个地方：
+      1. evolution-log/当天日期.md — 完整记录（tool review + strategy review + dna review）
       2. memory/当天日期.md — 结论摘要
 
       **同时记录 eval 指标**（追加到 evolution-log/当天日期.md 末尾）：
       ```
       ## Eval Baseline
       - PR merge rate: X% (N merged / M total) — 来源: gogetajob stats [已验证]
-      - Audit findings: N 条（本次 review 被审计员纠正的数量）[已验证]
-      - Repeat gradients: N 条（beliefs-candidates.md 中标了 repeated 的）[已验证]
       - beliefs-candidates total: N 条 [已验证]
+      - Repeat gradients: N 条（beliefs-candidates.md 中标了 repeated 的）[已验证]
       - DNA graduations: N 次（累计从 candidates 升级到 DNA 的）[已验证]
       ```
-      这些数字用于跟踪进化趋势。merge rate 应上升，audit findings 应下降，repeat gradients 应减少。
 
       然后 cd ~/.openclaw/workspace/evolution-log && git add -A && git commit && git push
-    branches:
-      - condition: "完成"
-        next: propose
 
-  propose:
-    task: |
-      根据最终版本，写一条进化提案发给 Luna。格式：
-
-      📋 今日自检完成，以下是进化提案：
-
-      **发现的问题：**（列出关键发现，每条标注来源和验证状态）
-
-      **我想做的改变：**（具体的进化动作，比如改哪个 DNA 文件、修什么工具、清理什么）
-
-      **不做什么：**（审计员否定了的、证据不足的，说明为什么暂不行动）
-
-      等 Luna 确认后再执行。不要在这一步做任何实际改动。
+      ⚠️ 不要 spawn 子 agent。所有操作在当前 session 同步完成。
     terminal: true

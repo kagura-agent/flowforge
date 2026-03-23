@@ -1,0 +1,51 @@
+name: daily-audit
+description: "独立审计 + 修正 + 提案（6:00 AM，读 evolution-log 审计 3:00 的 review）"
+start: audit
+
+nodes:
+  audit:
+    task: |
+      审计今天的 daily review。
+      1. 读 evolution-log/当天日期.md（3:00 AM review 的产出）
+      2. 逐条审计：
+         a. 验证不充分？数据误读？叙事包装？遗漏？
+         b. 工具 review 质量：每个工具是否五个问题都回答了？每个回答有实际内容吗？有遗漏的工具吗？
+         c. 战略 review：引用的来源对吗？结论有依据吗？
+         d. DNA review：升级判断合理吗？一致性检查做了吗？
+      3. 你是审计员，不是原作者。用怀疑的眼光看每条结论
+      4. 基本纪律：查数据、对照源码、检查实际路径。不能光靠 review 里写的
+    branches:
+      - condition: "审计完成"
+        next: fix
+
+  fix:
+    task: |
+      根据审计发现，逐条修正 review 结论：
+      1. 读审计的每条发现
+      2. 对每条发现：认可 → 补查数据并修正结论；不认可 → 说明为什么（附证据）
+      3. 审计员说遗漏的工具 → 补做五问
+      4. 审计员说回答草率的 → 补充实际内容
+      5. 把修正追加到 evolution-log/当天日期.md（标注"审计修正"章节）
+      6. cd ~/.openclaw/workspace/evolution-log && git add -A && git commit && git push
+
+      ⚠️ 不要 spawn 子 agent。所有操作在当前 session 同步完成。
+    branches:
+      - condition: "所有审计反馈都逐条处理了"
+        next: propose
+
+  propose:
+    task: |
+      根据 review + 审计修正的最终版本，写一条进化提案发给 Luna。格式：
+
+      📋 今日自检完成，以下是进化提案：
+
+      **发现的问题：**（列出关键发现，每条标注来源和验证状态）
+
+      **审计修正：**（审计员纠正了哪些结论，修正了什么）
+
+      **我想做的改变：**（具体的进化动作，比如改哪个 DNA 文件、修什么工具、清理什么）
+
+      **不做什么：**（证据不足的，说明为什么暂不行动）
+
+      等 Luna 确认后再执行。不要在这一步做任何实际改动。
+    terminal: true
