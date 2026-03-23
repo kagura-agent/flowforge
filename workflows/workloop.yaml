@@ -48,10 +48,10 @@ nodes:
          a. cat ~/.openclaw/workspace/knowledge-base/projects/<项目名>.md — 田野笔记
          b. cat ~/self-improving/projects/<项目名>.md 2>/dev/null — 执行改进笔记
          c. 如果两个文件都不存在，说明这是第一次打这个 repo，要特别小心
-      2. **学习维护者**（不能跳过）：
-         a. 读维护者最近 merged 的 2-3 个 PR（gh pr list --repo X --state merged --limit 3）
-         b. 注意：他们怎么写测试？怎么处理边界？PR 描述什么格式？
-         c. 记录学到的具体技巧到田野笔记
+      2. **学习维护者**（从田野笔记读，不是现场查）：
+         a. 田野笔记里应该已有维护者模式（reflect 时沉淀的）
+         b. 如果笔记里没有，说明这是第一次打这个 repo——此时才去查最近 merged PR
+         c. 注意：他们怎么写测试？怎么处理边界？PR 描述什么格式？
       3. 读 CONTRIBUTING.md
       4. 理解相关代码模块的结构
       5. 确认 issue 的根因或需求
@@ -62,7 +62,7 @@ nodes:
          b. 上游没有已有修复或竞争 PR 吗？
          c. 我读了 CONTRIBUTING.md 和最近的 merge 模式吗？
          d. 我能验证这个修复吗？
-         e. open PR 数量没到上限吗？
+         e. 这个 repo 我的 open PR ≤ 3 吗？（超过就停，等已有 PR 被消化）
       汇报你的理解和实现计划，包含从笔记和维护者 PR 中学到的关键信息。
     branches:
       - condition: "issue 可做，计划明确"
@@ -120,6 +120,7 @@ nodes:
       编辑 ~/.openclaw/workspace/knowledge-base/projects/<项目名>.md，追加：
       - 这次 PR 的结果（merged/pending/closed + 原因）
       - 维护者的 review 风格和偏好（新发现的）
+      - **维护者 PR 模式**：他们怎么写测试、处理边界、描述 PR？（下次 study 要读这些）
       - CI/lint/测试的注意事项
       - 踩过的坑
       - 下次打这个 repo 该注意什么
