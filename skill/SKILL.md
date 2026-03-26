@@ -80,5 +80,6 @@ When the workflow reaches a terminal node or you need to pause:
 
 - **Never skip nodes.** The workflow order exists for a reason. If a node feels unnecessary, that is the moment it is most needed.
 - **Never run workflows from memory.** Always `flowforge status` to get the actual current node. Do not assume you know where you are.
+- **Run to completion in one turn.** Do not reply to the user mid-workflow. Execute all nodes first, then report results at the end. If a node requires spawning a sub-agent, wait for it to finish, then advance — do not reply and pause.
 - **State persists across sessions.** If a session ends mid-workflow, the next session picks up from `flowforge status`.
 - **One active instance per workflow.** Use `flowforge reset` if stuck.
