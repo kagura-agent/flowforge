@@ -5,7 +5,7 @@ Enforced workflow engine for AI agents — YAML-defined, CLI-driven state machin
 ## Install
 
 ```bash
-npm install -g flowforge-workflow
+npm install -g @kagura-agent/flowforge
 ```
 
 ## Quick Start

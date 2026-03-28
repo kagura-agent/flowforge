@@ -13,7 +13,7 @@ flowforge --version
 If not installed:
 
 ```bash
-npm install -g flowforge-workflow
+npm install -g @kagura-agent/flowforge
 ```
 
 Verify installation:
@@ -170,7 +170,7 @@ See [references/examples/](references/examples/) for more workflow templates.
 FlowForge CLI is not installed or not in PATH. Run:
 
 ```bash
-npm install -g flowforge-workflow
+npm install -g @kagura-agent/flowforge
 ```
 
 ### Permission denied
@@ -187,7 +187,7 @@ source ~/.bashrc
 Then retry:
 
 ```bash
-npm install -g flowforge-workflow
+npm install -g @kagura-agent/flowforge
 ```
 
 ### Workflow not found after define
