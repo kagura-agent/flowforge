@@ -48,6 +48,13 @@ nodes:
          a. cat ~/.openclaw/workspace/knowledge-base/projects/<项目名>.md — 田野笔记
          b. cat ~/self-improving/projects/<项目名>.md 2>/dev/null — 执行改进笔记
          c. 如果两个文件都不存在，说明这是第一次打这个 repo，要特别小心
+      1b. **验证本地测试环境**（第一次打新 repo 时必做，之后跳过）：
+         a. 这个 repo 用什么语言？Go/Python/TS/Java/Rust？
+         b. 本地有对应的运行时吗？`go version` / `python --version` / `node --version`
+         c. 能装依赖吗？`go mod download` / `pip install -e ".[dev]"` / `npm install`
+         d. 能跑测试吗？找到测试命令（Makefile/pyproject.toml/package.json）跑一遍
+         e. **如果环境配不通 → 记到田野笔记里，写明卡在哪。但不要因此放弃这个 repo**
+         f. 环境配好后，在田野笔记里记录测试命令，下次直接用
       2. **搜跨项目知识**（不能跳过）：
          a. 从 issue 标题/描述提取 2-3 个关键词
          b. cd ~/.openclaw/workspace/knowledge-base && MEMEX_HOME=. node ~/repos/forks/memex/dist/cli.js search --all "<关键词>"
