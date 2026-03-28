@@ -169,6 +169,20 @@ See [references/yaml-format.md](references/yaml-format.md) for complete YAML for
 
 See [references/examples/](references/examples/) for more workflow templates.
 
+## Step 8: Build Your Mapping Table
+
+As you use FlowForge, you'll notice patterns — certain phrases from the user always map to the same workflow. When this happens, add the mapping to the **My Workflows** table in SKILL.md:
+
+```markdown
+| Intent | Workflow |
+|--------|----------|
+| deploy to production | deploy |
+| review this PR | code-review |
+| research a topic | research |
+```
+
+This table is yours to maintain. It makes FlowForge faster to trigger — instead of running `flowforge list` every time, you'll know exactly which workflow to start.
+
 ## Troubleshooting
 
 ### Command not found: flowforge

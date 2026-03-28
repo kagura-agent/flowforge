@@ -27,19 +27,29 @@ Use FlowForge when:
 
 Don't use for simple one-off tasks or quick questions.
 
+## My Workflows
+
+<!-- This table maps user intents to workflow names. -->
+<!-- When you notice the same intent matching the same workflow 2-3 times, add it here. -->
+<!-- This saves a `flowforge list` lookup every time and makes triggering instant. -->
+
+| Intent | Workflow |
+|--------|----------|
+| *(add your mappings here as you use FlowForge)* | |
+
+**Self-updating rule:** When you match an intent to a workflow via `flowforge list` and it works well, add that mapping to the table above. Over time this table becomes your personalized trigger map — no need to look up workflows you use regularly.
+
 ## Core Workflow
 
-### 1. List Available Workflows
+### 1. Find the Right Workflow
+
+First check the **My Workflows** table above. If the user's intent matches an entry, use it directly.
+
+If no match, fall back to discovery:
 
 ```bash
 flowforge list
 ```
-
-Common workflows users might have:
-- Code contribution/PR workflows
-- Learning/research processes
-- Code review procedures
-- Project setup checklists
 
 If no workflow matches user's intent, help them create one (see [yaml-format.md](references/yaml-format.md)).
 
