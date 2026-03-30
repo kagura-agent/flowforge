@@ -37,7 +37,13 @@ nodes:
       用 gogetajob scan --all 扫描所有活跃公司（公司列表从 gogetajob DB 读取，不硬编码）。
       用 gogetajob feed 查看可做的 issue。
       选择一个最有价值的 issue：优先选真实 bug > 测试覆盖 > 文档 > feature。
-      确认没有竞争 PR。
+      确认没有竞争 PR：`gh pr list --repo owner/repo --search "关键词"` 检查。
+      选题 tips：
+      - 选有田野笔记的 repo 优先（已有知识积累效率更高）
+      - 高星项目先查竞争 PR，别白做
+      - 安全/基础设施类 issue 先看 related issues，打包修复 > 逐个提
+      - 维护者 merge 统计很重要（内部优先的 repo 堆外部 PR 没意义）
+      - 选 issue 前 git log 确认相关代码是否还存在（可能已被删/修）
       汇报选中的 issue 和理由。
     branches:
       - condition: "找到了合适的 issue"
@@ -50,8 +56,7 @@ nodes:
       深入研究选中的项目和 issue：
       1. **必须先读笔记**（不能跳过）：
          a. cat ~/.openclaw/workspace/knowledge-base/projects/<项目名>.md — 田野笔记
-         b. cat ~/self-improving/projects/<项目名>.md 2>/dev/null — 执行改进笔记
-         c. 如果两个文件都不存在，说明这是第一次打这个 repo，要特别小心
+         b. 如果文件不存在，说明这是第一次打这个 repo，要特别小心
       1b. **验证本地测试环境**（第一次打新 repo 时必做，之后跳过）：
          a. 这个 repo 用什么语言？Go/Python/TS/Java/Rust？
          b. 本地有对应的运行时吗？`go version` / `python --version` / `node --version`
@@ -102,6 +107,8 @@ nodes:
          - **task 末尾必须加验证指令**：
            "Before committing: 1) grep for all test files that import/mock the interfaces you changed, update their mocks. 2) Run the project's test/lint commands. 3) git diff --stat to confirm no files were missed."
          - 一行级别的简单修复可以自己做，不需要调 Claude Code
+         - **效率 tip**：大文件（1000+ 行）的简单修复（< 20 行改动），手动改比 acpx exec 更高效
+         - acpx exec 超时默认 300 秒，大文件可能不够，评估后决定手动还是调 agent
       1. acpx exec 是同步的 — 等它跑完结果直接在 stdout 里
       2. Claude Code 完成后：检查他的 commit，review 改动是否正确
       3. 确保代码风格符合项目规范
@@ -164,14 +171,14 @@ nodes:
       - what_should_have_been_done: 正确做法
       - prevention_principle: 怎么防
 
-      **沉淀分流**（三层，关键！所有笔记用 [[双链]] 互引）：
+      **沉淀分流**（按性质选最佳载体，所有笔记用 [[双链]] 互引）：
       - **项目级 pattern**（跟具体 repo/maintainer/CI 相关）→ knowledge-base/projects/项目名.md
         用 [[双链]] 引用相关项目笔记和概念卡片
         例：NemoClaw CI 慢要先本地 lint、gitclaw maintainer 偏好小 PR
       - **跨项目洞察**（多个项目对比出的规律、生态观察）→ memex 卡片
         写完后：cd ~/.openclaw/workspace/knowledge-base && git add -A && git commit -m "card: 卡片名" && git push
         例：TypeScript 项目普遍用 X 测试框架、大 repo 的 review 流程有 Y 共性
-      - **行为级 pattern**（跨项目通用的工作方式）→ beliefs-candidates.md
+      - **行为级 pattern**（跨项目通用的工作方式）→ beliefs-candidates.md（梯度收集，积累够了分流到 DNA/Workflow/KB）
         例：选 issue 前查竞争 PR、被 review 先理解再改
       不确定的先放 knowledge-base，重复出现再考虑升级。
 

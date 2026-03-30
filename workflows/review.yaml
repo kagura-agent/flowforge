@@ -37,6 +37,28 @@ nodes:
       3. DNA 文件之间一致吗？
     branches:
       - condition: "完成"
+        next: memory_hygiene
+
+  memory_hygiene:
+    task: |
+      MEMORY.md 记忆卫生（inspired by Claude Code Auto Dream）。
+      读 MEMORY.md，执行三项清理：
+
+      1. **去重**：有没有重复章节？（如"新项目"出现多次、同一信息不同位置写了两遍）
+         - 合并到一处，删除重复
+      2. **去旧**：有没有已被覆盖的旧数据？（如旧的打工成果统计、已退役的工具描述过长）
+         - 删除旧版本，只留最新
+         - 已暂停/退役的项目压缩到 1-2 行
+      3. **归档**：有没有细节过多、该移到 knowledge-base 的内容？
+         - 项目的技术细节（功能列表、PR 历史）→ knowledge-base/projects/
+         - MEMORY.md 只留索引级描述
+
+      ⚠️ 编辑文件时：先 read 获取精确内容，再 edit。不要凭记忆猜 oldText。
+      每次改动都 git diff 确认，不要误删有价值的信息。
+      不设硬行数上限——质量好就留，冗余了就清。
+      汇报：清理了什么、删了多少行、现在多少行。
+    branches:
+      - condition: "完成"
         next: write_log
 
   write_log:
@@ -44,6 +66,9 @@ nodes:
       将 review 结果写入两个地方：
       1. evolution-log/当天日期.md — 完整记录（tool review + strategy review + dna review）
       2. memory/当天日期.md — 结论摘要
+
+      ⚠️ 写文件时：先用 read 读取文件当前内容，再用 edit（确保 oldText 精确匹配）或 exec 追加。
+      不要凭记忆猜测文件内容作为 oldText，这是 edit 失败的首要原因。
 
       **同时记录 eval 指标**（追加到 evolution-log/当天日期.md 末尾）：
       ```

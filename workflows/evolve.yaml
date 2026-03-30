@@ -1,0 +1,54 @@
+name: evolve
+description: "执行 Luna 确认的进化方向，并闭环记录到 evolution-log。由 daily-audit 自动创建 pending 实例，Luna 确认后手动推进。触发词：进化, evolve, 执行审计提案"
+start: review_proposal
+
+nodes:
+  review_proposal:
+    task: |
+      读取待执行的审计提案：
+      1. `flowforge active` 查看本实例的创建时间，确定对应哪天的审计
+      2. 读 evolution-log/对应日期.md 的"我想做的改变"章节
+      3. 确认 Luna 已批准哪些改变（从对话上下文获取）
+      4. 列出要执行的改变清单
+      如果 Luna 还没确认，停在这里等她回复。
+    branches:
+      - condition: "Luna 已确认，改变清单明确"
+        next: execute
+      - condition: "没有需要执行的改变（全部否决或已执行）"
+        next: close
+
+  execute:
+    task: |
+      按清单逐项执行 Luna 确认的改变：
+      - 改 DNA 文件（AGENTS.md / SOUL.md / HEARTBEAT.md / NUDGE.md）
+      - 改 Workflow（workloop.yaml 等）
+      - 改 Knowledge-base（卡片/笔记）
+      - 改 MEMORY.md
+      - 其他文件
+      每项改完后确认：文件已保存，内容正确。
+      汇报执行结果。
+    next: record
+
+  record:
+    task: |
+      把执行结果写回 evolution-log 闭环：
+      1. 追加到 evolution-log/当天日期.md，新建章节"## 审计闭环（时间）"
+         - 列出每项改变的执行状态（✅ 已执行 / ❌ 未执行 + 原因）
+         - 如果有改变被 Luna 否决，也记录原因
+      2. `cd ~/.openclaw/workspace/evolution-log && git add -A && git commit -m "evolve: audit proposal executed" && git push`
+      3. 更新 memory/YYYY-MM-DD.md 记录本次进化
+    next: done
+
+  close:
+    task: |
+      无需执行的情况：
+      1. 在 evolution-log 追加"## 审计闭环（时间）— 无需执行（原因）"
+      2. push
+    terminal: true
+
+  done:
+    task: |
+      进化执行完成。汇报：
+      - 执行了几项改变
+      - evolution-log 已闭环
+    terminal: true

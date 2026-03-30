@@ -48,4 +48,8 @@ nodes:
       **不做什么：**（证据不足的，说明为什么暂不行动）
 
       等 Luna 确认后再执行。不要在这一步做任何实际改动。
+
+      **最后：创建 evolve workflow 待执行实例**
+      运行 `cd ~/.openclaw/workspace/flowforge && node bin/flowforge.js start evolve`
+      这会创建一个 pending 的 evolve 实例，等 Luna 确认后推进。
     terminal: true
