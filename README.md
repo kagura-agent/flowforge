@@ -111,6 +111,8 @@ nodes:
 | `flowforge list` | List all defined workflows |
 | `flowforge active` | List active workflow instances |
 | `flowforge reset` | Reset current instance to start |
+| `flowforge run <workflow>` | Start (or resume) workflow and output next action as JSON |
+| `flowforge advance` | Advance workflow with result and output next action as JSON |
 
 ## Example Workflow
 

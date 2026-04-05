@@ -12,6 +12,7 @@ nodes:
          a. 还在用吗？ b. 好用吗？ c. 还需要吗？ d. 上游更新了吗？ e. 服务到位吗？
       4. 基本纪律：数据必须查、标注 [已验证/未验证]
       ⚠️ 目标：控制输出长度，为后续节点留 token 预算。正常的工具不需要长篇报告。
+      ⚠️ 硬限制：本节点最终输出不超过 30 行。正常工具一行带过，只展开异常项。
     branches:
       - condition: "所有工具都逐个回答了五个问题"
         next: strategy_review
@@ -64,8 +65,21 @@ nodes:
       1. evolution-log/当天日期.md — 完整记录（tool review + strategy review + dna review）
       2. memory/当天日期.md — 结论摘要
 
-      ⚠️ 这是最重要的节点 — 宁可前面的 review 简洁一点，也不能这个节点没写出来。
-      如果前面的 review 信息不完整，就把已有的结论写出去，不要空手而归。
+      ⚠️⚠️⚠️ 这是最重要的节点 — 写 memory 是这个 workflow 的核心产出。
+      即使前面节点的输出很长、context 很满，你也**必须**至少写一条摘要到 memory/YYYY-MM-DD.md。
+      宁可摘要只有 3 行，也不能 0 写入。不要空手而归。
+      
+      **最低要求（无论如何必须完成）：**
+      用 exec 工具执行以下命令追加到 memory 文件（这比 edit 更可靠，不需要 oldText）：
+      ```bash
+      cat >> ~/.openclaw/workspace/memory/$(date +%Y-%m-%d).md << 'REVIEW_EOF'
+
+      ## [Cron] daily-review (03:00)
+      - 完成每日进化检查点（tool/strategy/dna/memory-hygiene review）
+      - 结果已写入 evolution-log/
+      REVIEW_EOF
+      ```
+      然后再补充具体发现。如果 context 不够写详细内容，至少上面这条必须写入。
 
       写文件时：先用 read 读取文件当前内容，再用 edit（确保 oldText 精确匹配）或 exec 追加。
       不要凭记忆猜测文件内容作为 oldText，这是 edit 失败的首要原因。

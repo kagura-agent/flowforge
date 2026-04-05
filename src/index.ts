@@ -35,7 +35,7 @@ function autoLoadWorkflows() {
 autoLoadWorkflows();
 
 const program = new Command();
-program.name("flowforge").description("Personal workflow engine").version("1.0.0");
+program.name("flowforge").description("Personal workflow engine").version("1.1.0");
 
 program
   .command("define <yaml>")
