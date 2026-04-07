@@ -15,7 +15,7 @@ nodes:
 
       如果有需要处理的反馈，说明具体是哪个 PR、什么反馈、是真人还是 bot。
 
-      对于被关闭的 PR：读关闭原因，如果别人的方案更好，去学那个方案写田野笔记。
+      对于被关闭的 PR：读关闭原因，如果别人的方案更好，去学那个方案写wiki 笔记。
 
       '
     branches:
@@ -25,7 +25,7 @@ nodes:
       next: find_work
     executor: subagent
   handle_feedback:
-    task: "处理上一步发现的 PR 反馈：\n1. 读 review 评论，理解要求\n2. 修改代码\n3. **本地测试**（不能跳过）：\n   a. 读田野笔记里的测试命令\n   b. 跑测试，确认全过\n   c. 改了接口/类型？→\
+    task: "处理上一步发现的 PR 反馈：\n1. 读 review 评论，理解要求\n2. 修改代码\n3. **本地测试**（不能跳过）：\n   a. 读wiki 笔记里的测试命令\n   b. 跑测试，确认全过\n   c. 改了接口/类型？→\
       \ grep 所有 mock/stub 文件，确认同步\n   d. `git diff --stat` 检查有没有遗漏的文件\n4. 提交并 push\n5. 在 PR 上回复 reviewer\n处理完所有反馈后汇报结果。\n"
     terminal: true
   find_work:
@@ -47,7 +47,7 @@ nodes:
 
       选题 tips：
 
-      - 选有田野笔记的 repo 优先（已有知识积累效率更高）
+      - 选有wiki 笔记的 repo 优先（已有知识积累效率更高）
 
       - 高星项目先查竞争 PR，别白做
 
@@ -67,12 +67,12 @@ nodes:
       next: reflect
     executor: subagent
   study:
-    task: "深入研究选中的项目和 issue：\n1. **必须先读笔记**（不能跳过）：\n   a. cat ~/.openclaw/workspace/wiki/projects/<项目名>.md — 田野笔记\n\
+    task: "深入研究选中的项目和 issue：\n1. **必须先读笔记**（不能跳过）：\n   a. cat ~/.openclaw/workspace/wiki/projects/<项目名>.md — wiki 笔记\n\
       \   b. 如果文件不存在，说明这是第一次打这个 repo，要特别小心\n1b. **验证本地测试环境**（第一次打新 repo 时必做，之后跳过）：\n   a. 这个 repo 用什么语言？Go/Python/TS/Java/Rust？\n\
       \   b. 本地有对应的运行时吗？`go version` / `python --version` / `node --version`\n   c. 能装依赖吗？`go mod download` / `pip install\
-      \ -e \".[dev]\"` / `npm install`\n   d. 能跑测试吗？找到测试命令（Makefile/pyproject.toml/package.json）跑一遍\n   e. **如果环境配不通 → 记到田野笔记里，写明卡在哪。但不要因此放弃这个\
-      \ repo**\n   f. 环境配好后，在田野笔记里记录测试命令，下次直接用\n2. **搜跨项目知识**（不能跳过）：\n   a. 从 issue 标题/描述提取 2-3 个关键词\n   b. cd ~/.openclaw/workspace/wiki && MEMEX_HOME=. node ~/repos/forks/memex/dist/cli.js search --all --semantic \"<关键词>\"\n   c. 搜到相关卡片 → 读一下，看有没有已有洞察能指导实现\n  \
-      \ d. 没搜到 → 继续，不纠结\n3. **学习维护者**（从田野笔记读，不是现场查）：\n   a. 田野笔记里应该已有维护者模式（reflect 时沉淀的）\n   b. 如果笔记里没有，说明这是第一次打这个 repo——此时才去查最近\
+      \ -e \".[dev]\"` / `npm install`\n   d. 能跑测试吗？找到测试命令（Makefile/pyproject.toml/package.json）跑一遍\n   e. **如果环境配不通 → 记到wiki 笔记里，写明卡在哪。但不要因此放弃这个\
+      \ repo**\n   f. 环境配好后，在wiki 笔记里记录测试命令，下次直接用\n2. **搜跨项目知识**（不能跳过）：\n   a. 从 issue 标题/描述提取 2-3 个关键词\n   b. cd ~/.openclaw/workspace/wiki && MEMEX_HOME=. node ~/repos/forks/memex/dist/cli.js search --all --semantic \"<关键词>\"\n   c. 搜到相关卡片 → 读一下，看有没有已有洞察能指导实现\n  \
+      \ d. 没搜到 → 继续，不纠结\n3. **学习维护者**（从wiki 笔记读，不是现场查）：\n   a. wiki 笔记里应该已有维护者模式（reflect 时沉淀的）\n   b. 如果笔记里没有，说明这是第一次打这个 repo——此时才去查最近\
       \ merged PR\n   c. 注意：他们怎么写测试？怎么处理边界？PR 描述什么格式？\n3. 读 CONTRIBUTING.md，**重点关注**：\n   a. PR 流程要求（changeset？CLA？签名？）（教训：stagehand 没加 changeset 被关）\n   b. 代码风格/lint 要求\n   c. 测试要求\n4. 涉及 RFC/标准规范的修改？→ 先读原始 RFC 文档再写代码，不凭经验猜 API（教训：Acontext #509 RFC 5987 编码用错 API）\n5. 理解相关代码模块的结构\n5. 确认 issue 的根因或需求\n6. **查近期修复**：`git\
       \ log --oneline -20 -- <相关文件>` 看有没有近期 commit 已经修了这个 issue\n   - 如果发现已修但 issue 未关闭，在 issue 下评论指出，然后退回 find_work\n7. 确认没有人在做同一个\
       \ issue（检查 issue 下的关联 PR 和评论）\n8. 评估是否真的能在这个 repo 修（不是上游问题）\n9. **提 PR 前 5 问**（全过才提）：\n   a. 这个 PR 只解决一个问题吗？\n   b.\
@@ -131,10 +131,10 @@ nodes:
       next: implement
     executor: subagent
   reflect:
-    task: "反思本轮打工并**更新项目笔记**（不能跳过）：\n\n**第一步：更新田野笔记**（必须做）\n编辑 ~/.openclaw/workspace/wiki/projects/<项目名>.md，追加：\n\
+    task: "反思本轮打工并**更新项目笔记**（不能跳过）：\n\n**第一步：更新wiki 笔记**（必须做）\n编辑 ~/.openclaw/workspace/wiki/projects/<项目名>.md，追加：\n\
       - 这次 PR 的结果（merged/pending/closed + 原因）\n- 维护者的 review 风格和偏好（新发现的）\n- **维护者 PR 模式**：他们怎么写测试、处理边界、描述 PR？（下次 study 要读这些）\n\
       - CI/lint/测试的注意事项\n- 踩过的坑\n- 下次打这个 repo 该注意什么\n然后：cd ~/.openclaw/workspace/wiki && git add -A && git commit\
-      \ -m \"update: <项目名> field notes\" && git push\n\n**第二步：Acontext distillation 反思**\n\n**成功分析**（什么有效）：\n- goal: 这轮要做什么？\n\
+      \ -m \"update: <项目名> wiki notes\" && git push\n\n**第二步：Acontext distillation 反思**\n\n**成功分析**（什么有效）：\n- goal: 这轮要做什么？\n\
       - approach: 什么方法有效？\n- key_decisions: 哪些选择起了作用？\n- pattern: 可复用的模式（选题策略、代码方法、沟通方式）\n- applies_when: 具体适用条件（哪个项目、什么类型的\
       \ issue）\n\n**失败分析**（哪里卡了）：\n- failure_point: 卡在哪？\n- flawed_reasoning: 错误假设\n- what_should_have_been_done: 正确做法\n-\
       \ prevention_principle: 怎么防\n\n**沉淀分流**（按性质选最佳载体，所有笔记用 [[双链]] 互引）：\n- **项目级 pattern**（跟具体 repo/maintainer/CI 相关）→ wiki/projects/项目名.md\n\
