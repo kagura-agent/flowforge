@@ -7,13 +7,20 @@ nodes:
   entry:
     task: |
       选择本轮学习模式：
-      1. **侦察**：找新项目、新趋势、新方向
-      2. **跟进**：已关注项目有没有新动态
-      3. **应用**：把之前学到的东西用在自己身上（改工具、改流程、验证假设）
-      根据当前需要选择。如果最近几轮都在侦察，考虑切换到应用。
+      1. **侦察**：找新项目、新趋势、新方向（适合距上次侦察 ≥3 天）
+      2. **快速扫描**：10 分钟 GitHub trending + HN 速览，只记标题和一句话判断（适合日常保持手感）
+      3. **跟进**：已关注项目有没有新动态
+      4. **应用**：把之前学到的东西用在自己身上（改工具、改流程、验证假设）
+
+      **决策辅助**：先查 memory/最近 3 天.md，看最近做了什么模式。
+      - 连续侦察 2 次以上 → 优先选应用或跟进
+      - 连续应用 2 次以上 → 优先选侦察或跟进
+      - 不确定 → 快速扫描是最安全的选择
     branches:
       - condition: "侦察新东西"
         next: scout
+      - condition: "快速扫描"
+        next: quick_scout
       - condition: "跟进已关注项目"
         next: followup
       - condition: "应用已有知识"
@@ -37,6 +44,20 @@ nodes:
       - condition: "没有新发现，跟进已关注项目"
         next: followup
       - condition: "什么都没有"
+        next: reflect
+
+  quick_scout:
+    task: |
+      10 分钟快速扫描，不求深入，只求广度：
+      1. GitHub trending today（AI/agent 相关前 10）— 记项目名 + stars + 一句话
+      2. HN front page 扫一眼 — 有没有 agent 相关的讨论
+      3. 每个发现只写一行判断："值得深入" / "已知" / "不相关"
+      4. 如果有 "值得深入" 的 → 记到 wiki/projects/backlog.md
+      总耗时控制在 10 分钟内。汇报扫描结果。
+    branches:
+      - condition: "发现了值得深入研究的"
+        next: deep_read
+      - condition: "没什么新的"
         next: reflect
 
   apply:
