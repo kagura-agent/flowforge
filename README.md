@@ -177,3 +177,7 @@ State persists in SQLite database at `~/.flowforge/`. Workflows can be paused an
 ## License
 
 MIT
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=kagura-agent/flowforge&type=Date)](https://star-history.com/#kagura-agent/flowforge&Date)
