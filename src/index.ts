@@ -177,11 +177,10 @@ program
   .description("Start workflow and output next action as JSON")
   .action((workflow) => {
     try {
-      // Start or resume workflow
-      try {
+      // Resume existing instance, or start a new one if none active
+      const existing = engine.active().find(i => i.workflow_name === workflow);
+      if (!existing) {
         engine.start(workflow);
-      } catch (e: any) {
-        // If already active, that's OK — we'll get the current action
       }
 
       const action = engine.getAction(workflow);
