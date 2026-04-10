@@ -97,9 +97,9 @@ nodes:
       \ version` / `python --version` / `node --version`\n   c. 能装依赖吗？`go mod download`\
       \ / `pip install -e \".[dev]\"` / `npm install`\n   d. 能跑测试吗？找到测试命令（Makefile/pyproject.toml/package.json）跑一遍\n\
       \   e. **如果环境配不通 → 记到wiki 笔记里，写明卡在哪。但不要因此放弃这个 repo**\n   f. 环境配好后，在wiki 笔记里记录测试命令，下次直接用\n\
-      2. **搜跨项目知识**（不能跳过）：\n   a. 从 issue 标题/描述提取 2-3 个关键词\n   b. cd ~/.openclaw/workspace/wiki\
-      \ && MEMEX_HOME=. node ~/repos/forks/memex/dist/cli.js search --all --semantic\
-      \ \"<关键词>\"\n   c. 搜到相关卡片 → 读一下，看有没有已有洞察能指导实现\n   d. 没搜到 → 继续，不纠结\n3. **学习维护者**（从wiki\
+      2. **搜跨项目知识（两步检索，不能跳过）**：\n   a. 从 issue 标题/描述提取 2-3 个关键词\n   b. cd ~/.openclaw/workspace/wiki\
+      \ && MEMEX_HOME=. memex search\
+      \ \"<关键词>\"\n   c. 搜到相关卡片 → 读一下，看有没有已有洞察能指导实现\n   d. **backlink 扩展**：对每个命中的卡片跑 `MEMEX_HOME=. memex backlinks <slug>`，拉出关联卡片，读取最相关的 1-2 个（向量找入口，图谱做扩展）\n   e. 没搜到 → 继续，不纠结\n3. **学习维护者**（从wiki\
       \ 笔记读，不是现场查）：\n   a. wiki 笔记里应该已有维护者模式（reflect 时沉淀的）\n   b. 如果笔记里没有，说明这是第一次打这个\
       \ repo——此时才去查最近 merged PR\n   c. 注意：他们怎么写测试？怎么处理边界？PR 描述什么格式？\n3. 读 CONTRIBUTING.md，**重点关注**：\n\
       \   a. PR 流程要求（changeset？CLA？签名？）（教训：stagehand 没加 changeset 被关）\n   b. 代码风格/lint\

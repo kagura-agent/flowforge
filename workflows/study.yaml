@@ -95,6 +95,8 @@ nodes:
       0. **先读已有知识**：
          - wiki/projects/项目名.md（如果有，带着上次的认知进入）
          - `grep -rl "关键词" ~/.openclaw/workspace/wiki/` 搜全库（cards + projects 都搜）
+         - `cd ~/.openclaw/workspace/wiki && MEMEX_HOME=. memex search "<关键词>" --limit 5` 语义搜索
+         - **backlink 扩展**：对命中的卡片跑 `MEMEX_HOME=. memex backlinks <slug>`，沿链接读 1-2 个关联卡片
          - 找到相关笔记和卡片就先读，带着已有认知进入
       1. 如果是新项目：clone，读 README、架构文档、核心模块
       2. 如果是已关注项目：读新变化的代码，理解设计决策
