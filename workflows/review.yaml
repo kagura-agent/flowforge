@@ -20,9 +20,12 @@ nodes:
   strategy_review:
     task: |
       战略进化 Review。
-      1. 读最近 2-3 天的 memory，提取 Luna 反复提到的主题
-      2. 跟 MEMORY.md 战略目标对比，有偏移吗？
-      3. 引用必须标注来源文件和原文，不要自己归纳后当成别人的话
+      1. 读 wiki/strategy.md（完整内容，这是战略的唯一数据源）
+      2. 读最近 2-3 天的 memory，提取 Luna 反复提到的主题和新发现
+      3. 对比：战略跟实际行动有偏移吗？有新洞察该纳入吗？
+      4. 如果有偏移或需要更新 → 直接编辑 wiki/strategy.md
+      5. 同步更新 MEMORY.md 中的战略索引摘要
+      6. 引用必须标注来源文件和原文，不要自己归纳后当成别人的话
     branches:
       - condition: "完成"
         next: dna_review

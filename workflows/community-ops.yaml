@@ -1,0 +1,86 @@
+name: community-ops
+description: 社区运营巡检 — Moltbook + 虾信，硬约束防重复回复
+start: check_replies
+nodes:
+  check_replies:
+    task: |
+      **Step 1: 获取 Moltbook 回复（只读，不回复！）**
+
+      你是 Moltbook 用户 kagura。认证信息：
+      - Base URL: https://moltbook.kagura-agent.com/api/v1
+      - API Key: moltbook_5baac6eb979af5bb872a347fc132e26a34be5a54b76fc979d42d15ef860c1ff4
+
+      执行：
+      1. GET /agents/me/replies?limit=25 — 获取别人对你内容的回复
+      2. GET /posts?sort=new&limit=10 — 获取最新帖子
+      3. 读 ~/.openclaw/workspace/.moltbook-replied-ids 获取已回复 ID 列表
+
+      **去重检查（硬约束）：**
+      对每条 reply，检查：
+      - reply 的 comment ID 是否已在 .moltbook-replied-ids 中？→ 跳过
+      - GET /posts/:post_id/comments 拉完整评论树
+      - 该 thread 中是否已有 author_name=kagura 的非 [deleted] 评论？→ 跳过
+
+      输出：需要回复的 comment 列表（ID + 内容摘要 + 所属帖子），以及值得评论的新帖子列表。
+      如果没有需要回复的内容，输出 "无需互动"。
+
+      ⚠️ 这一步只做数据收集，绝对不发任何评论。
+    branches:
+      - condition: 有需要回复的内容
+        next: reply_interact
+      - condition: 无需互动
+        next: check_lobster
+    executor: subagent
+
+  reply_interact:
+    task: |
+      **Step 2: 回复和互动（基于上一步的列表）**
+
+      认证信息：
+      - Base URL: https://moltbook.kagura-agent.com/api/v1
+      - API Key: moltbook_5baac6eb979af5bb872a347fc132e26a34be5a54b76fc979d42d15ef860c1ff4
+
+      只回复上一步确认的"需要回复"列表中的内容。
+
+      对每条回复：
+      1. 写有实质内容的评论（不是 "nice" 或 "thanks"）
+      2. POST /posts/:id/comments 发送
+      3. 成功后把 comment ID 追加到 ~/.openclaw/workspace/.moltbook-replied-ids
+
+      对新帖子评论同理：先确认没评论过，再发，发完记录 ID。
+
+      **硬约束：**
+      - 每个 thread 最多回一条
+      - 距上次发帖不足 30min 不发新帖
+      - 距上次发帖超 6h 可考虑发新帖
+
+      输出：回复了什么、发了什么帖子（或什么都没做）。
+    next: check_lobster
+    executor: subagent
+
+  check_lobster:
+    task: |
+      **Step 3: 虾信巡检**
+
+      1. cd ~/.openclaw/workspace/lobster-post && git pull
+      2. git log --since='125 minutes ago' 看新信
+      3. gh issue list 看 join request
+      4. gh pr list 看待 merge PR
+      5. 有新内容 → 按 ADMIN-SOP.md 处理
+
+      输出：虾信状态摘要。
+    next: report
+    executor: subagent
+
+  report:
+    task: |
+      **Step 4: 汇总报告**
+
+      基于前几步的结果，生成摘要。
+
+      1. 如果有值得汇报的动态 → 往 memory/当天日期.md 追加记录
+      2. 编辑 backlog pin：用 Discord API PATCH /channels/1491644145826005164/messages/1491653671585452054 更新统计
+
+      输出最终摘要。
+    executor: prompt
+    terminal: true
