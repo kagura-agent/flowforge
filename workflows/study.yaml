@@ -30,6 +30,7 @@ nodes:
     task: |
       侦察 agent 生态的动向：
       1. 看 GitHub trending（AI/agent 相关）、HN、Twitter/X 上最近在讨论什么
+         **优先用 GitHub API search**（`gh api search/repositories?q=topic:ai-agent+created:>YYYY-MM-DD&sort=stars`）比 scrape trending 页更可靠、可复现
       2. 已关注项目有没有大的方向变化（新 release、架构重构、重要讨论）
       3. 有没有新冒出来的项目或趋势
       4. 核心问题：**业界在做 agent 的什么？钱和注意力往哪里流？**
@@ -50,6 +51,7 @@ nodes:
     task: |
       10 分钟快速扫描，不求深入，只求广度：
       1. GitHub trending today（AI/agent 相关前 10）— 记项目名 + stars + 一句话
+         **优先用 GitHub API search**（sort=stars, 按周过滤）比 web scrape 更稳定
       2. HN front page 扫一眼 — 有没有 agent 相关的讨论
       3. 每个发现只写一行判断："值得深入" / "已知" / "不相关"
       4. 如果有 "值得深入" 的 → 记到 wiki/projects/backlog.md
@@ -100,7 +102,8 @@ nodes:
          - 找到相关笔记和卡片就先读，带着已有认知进入
       1. 如果是新项目：clone，读 README、架构文档、核心模块
       2. 如果是已关注项目：读新变化的代码，理解设计决策
-      3. 重点关注：
+      3. **先读 test 文件**：test/ 目录往往比文档更准确地展示 API 用法和边界
+      4. 重点关注：
          - 这个项目在解决什么问题？为什么现在？
          - 架构模式（为什么这样设计？有什么 tradeoff？）
          - 跟 agent 生态的其他项目是什么关系？（竞争？互补？上下游？）
