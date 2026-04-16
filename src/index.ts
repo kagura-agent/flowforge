@@ -53,9 +53,20 @@ program
 
 program
   .command("start <workflow>")
-  .description("Start a new instance of a workflow")
+  .description("Start a new instance of a workflow (name or path to .yaml file)")
   .action((workflow) => {
     try {
+      // If it looks like a file path, load it first
+      if (workflow.endsWith(".yaml") || workflow.endsWith(".yml")) {
+        const absPath = resolve(workflow);
+        if (existsSync(absPath)) {
+          const content = readFileSync(absPath, "utf-8");
+          engine.define(content);
+          // Extract workflow name from the loaded file
+          const match = content.match(/^name:\s*(.+)$/m);
+          if (match) workflow = match[1].trim();
+        }
+      }
       const { id, node } = engine.start(workflow);
       console.log(`Started instance #${id} at node '${node}'.`);
       printStatus();
