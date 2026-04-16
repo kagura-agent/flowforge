@@ -1,7 +1,12 @@
 name: workloop
 description: 打工循环 — 每轮先跟进已有工作，再找新活
-start: followup
+start: align
 nodes:
+  align:
+    task: '**读准则**：cat ~/.openclaw/workspace/wiki/github-contribution.md — 理解为什么打工、两条腿走路、选题原则。
+
+      这是整轮打工的基调，后续所有步骤都参照这个准则。'
+    next: followup
   followup:
     task: '**Step 1: PR 状态检查**
 
@@ -54,9 +59,7 @@ nodes:
       \   d. `git diff --stat` 检查有没有遗漏的文件\n4. 提交并 push\n5. 在 PR 上回复 reviewer\n处理完所有反馈后汇报结果。\n"
     terminal: true
   find_work:
-    task: '**先读方向**：cat ~/.openclaw/workspace/wiki/github-contribution.md — 理解北极星和选题原则。
-
-      用 gogetajob scan --all 扫描所有活跃公司（公司列表从 gogetajob DB 读取，不硬编码）。
+    task: '用 gogetajob scan --all 扫描所有活跃公司（公司列表从 gogetajob DB 读取，不硬编码）。
 
       用 gogetajob feed 查看可做的 issue。
 
