@@ -1,12 +1,28 @@
 name: study
 description: 学习循环 — 观察 agent 生态动向，深入研究项目，校准我们的方向
 
-start: entry
+start: align
 
 nodes:
+  align:
+    task: |
+      **读准则**：cat ~/.openclaw/workspace/wiki/study/guide.md
+      理解学习方向和原则。然后读 TODO.md「📚 学习」section，看有没有指定任务。
+    branches:
+      - condition: TODO 有指定学习任务
+        next: todo_task
+      - condition: 没有指定任务，自选模式
+        next: entry
+
+  todo_task:
+    task: |
+      执行 TODO 里指定的学习任务。做完后删掉该 TODO 条目。
+      汇报学习结果。
+    next: note
+
   entry:
     task: |
-      选择本轮学习模式：
+      选择本轮学习模式（**不允许空转**，每轮必须有产出）：
       1. **侦察**：找新项目、新趋势、新方向（适合距上次侦察 ≥3 天）
       2. **快速扫描**：10 分钟 GitHub trending + HN 速览，只记标题和一句话判断（适合日常保持手感）
       3. **跟进**：已关注项目有没有新动态
@@ -63,8 +79,8 @@ nodes:
     branches:
       - condition: "发现了值得深入研究的"
         next: deep_read
-      - condition: "没什么新的"
-        next: reflect
+      - condition: "没发现新项目，转 apply 已有知识"
+        next: apply
 
   apply:
     task: |
@@ -94,8 +110,8 @@ nodes:
     branches:
       - condition: "有项目有值得学习的新动态"
         next: deep_read
-      - condition: "没什么新的"
-        next: reflect
+      - condition: "没发现新动态，转 apply"
+        next: apply
 
   deep_read:
     task: |
@@ -182,6 +198,12 @@ nodes:
       - 新的可能方向？→ 记录并评估
 
       记录到 memory/YYYY-MM-DD.md。
+
+      **飞轮更新**（不可跳过）：
+      1. 回顾 wiki/study/guide.md — 学习原则有没有要调整的？
+      2. 回顾 wiki/study/study.yaml — 流程有没有卡的地方、多余的步骤？
+      3. 更新 TODO.md「📚 学习」section — 新的学习任务加进去，做完的删掉
+      有改动 → git commit + push
     next: done
 
   done:
