@@ -14,7 +14,8 @@
   ],
   "scripts": {
     "build": "esbuild src/index.ts --bundle --platform=node --target=node18 --format=esm --outfile=dist/flowforge.js --external:better-sqlite3 --banner:js=\"import { createRequire } from 'module'; const require = createRequire(import.meta.url);\"",
-    "postbuild": "npm rebuild better-sqlite3"
+    "postbuild": "npm rebuild better-sqlite3",
+    "test": "vitest run"
   },
   "keywords": [
     "agent",
@@ -40,7 +41,8 @@
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^20.0.0",
     "esbuild": "^0.21.0",
-    "typescript": "^5.4.0"
+    "typescript": "^5.4.0",
+    "vitest": "^4.1.4"
   },
   "engines": {
     "node": ">=22.0.0"
