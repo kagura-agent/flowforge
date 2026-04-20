@@ -56,7 +56,7 @@ nodes:
       - 特定工具的教训 → 更新 TOOLS.md 或对应 skill 文件
       - 如果修改了 SOUL.md / AGENTS.md / HEARTBEAT.md / IDENTITY.md / NUDGE.md：
         1. workspace commit: cd ~/.openclaw/workspace && git add -A && git commit -m "reflect: 简述改了什么"
-        2. dna repo 同步: cd ~/.openclaw/workspace/dna && git pull origin master && cp ~/.openclaw/workspace/{SOUL,AGENTS,HEARTBEAT,IDENTITY,NUDGE}.md . && git add -A && git commit -m "reflect: 简述改了什么" && git push origin master
+        2. dna repo 同步: cd ~/.openclaw/workspace && git add -A && git commit -m "reflect: 简述改了什么" && git push origin master
 
       **处理未兑现的承诺：**
       - 能现在做的 → 直接做
