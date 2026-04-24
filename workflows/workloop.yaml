@@ -7,7 +7,7 @@ description: |
 start: align
 nodes:
   align:
-    task: '**读准则**：cat ~/.openclaw/workspace/wiki/github-contribution.md — 理解为什么打工、两条腿走路、选题原则。
+    task: '**读准则**：cat ~/.openclaw/workspace/github-contribution/guide.md — 理解为什么打工、两条腿走路、选题原则。
 
       这是整轮打工的基调，后续所有步骤都参照这个准则。'
     next: followup
@@ -316,13 +316,13 @@ nodes:
       \ DNA/Workflow/KB）\n  例：选 issue 前查竞争 PR、被 review 先理解再改\n不确定的先放 wiki，重复出现再考虑升级。\n\
       \n**工具检查**：\n- gogetajob、gh、flowforge 等有没有问题？\n- 有 bug → 去工具 repo 提 issue 或自己修\n\
       \n把反思结果记到 memory/YYYY-MM-DD.md。\n\n**第三步：更新贡献准则和工作流**（飞轮闭环）\n\
-      回顾 ~/.openclaw/workspace/wiki/github-contribution/guide.md：\n\
+      回顾 ~/.openclaw/workspace/github-contribution/guide.md：\n\
       - 这轮贡献有没有新的选题认知？（比如某类项目 merge rate 特别低）\n\
       - 发现了新的有效渠道？\n\
       - \"服务到底\"或\"持续扩张\"有边界情况需要细化？\n\
       如果有 → 更新 guide.md\n\
       再回顾 workloop.yaml 本身：流程有没有卡的地方、多余的步骤、缺失的检查？\n\
-      如果有 → 更新 wiki/github-contribution/workloop.yaml\n\
+      如果有 → 更新 github-contribution/workflows/workloop.yaml\n\
       更新后 git commit + push。\n\n**第四步：更新 TODO**（改进点进入待办）\n\
       读 TODO.md「🔨 GitHub Contribution（精进）」section：\n\
       - 本轮发现工具/流程/策略改进点？→ 加入 TODO\n\

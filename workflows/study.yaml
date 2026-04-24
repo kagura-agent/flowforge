@@ -6,7 +6,7 @@ start: align
 nodes:
   align:
     task: |
-      **读准则**：cat ~/.openclaw/workspace/wiki/study/guide.md
+      **读准则**：cat ~/.openclaw/workspace/study/guide.md
       理解学习方向和原则。然后读 TODO.md「📚 学习」section，看有没有指定任务。
     branches:
       - condition: TODO 有指定学习任务
@@ -200,8 +200,8 @@ nodes:
       记录到 memory/YYYY-MM-DD.md。
 
       **飞轮更新**（不可跳过）：
-      1. 回顾 wiki/study/guide.md — 学习原则有没有要调整的？
-      2. 回顾 wiki/study/study.yaml — 流程有没有卡的地方、多余的步骤？
+      1. 回顾 study/guide.md — 学习原则有没有要调整的？
+      2. 回顾 study/workflows/study-loop.yaml — 流程有没有卡的地方、多余的步骤？
       3. 更新 TODO.md「📚 学习」section — 新的学习任务加进去，做完的删掉
       有改动 → git commit + push
     next: done
