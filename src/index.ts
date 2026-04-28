@@ -21,8 +21,8 @@ function autoLoadWorkflows() {
         try {
           const content = readFileSync(join(dir, file), "utf-8");
           engine.define(content);
-        } catch (e) {
-          // Silently skip invalid workflow files
+        } catch (e: any) {
+          console.warn(`⚠️  Skipping invalid workflow ${file}: ${e.message}`);
         }
       }
     } catch (e) {

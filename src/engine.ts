@@ -203,6 +203,16 @@ export function advanceWithResult(result: string, workflowName?: string): FlowAc
   const branchMatch = result.match(/\bbranch:?\s*(\d+)\b/i);
   if (branchMatch) {
     branch = parseInt(branchMatch[1], 10);
+  } else {
+    // Check if current node has branches — if so, warn that no branch was detected
+    const inst = db.getActiveInstance(workflowName);
+    if (inst) {
+      const wf = loadWorkflow(inst.workflow_name);
+      const node = wf.nodes[inst.current_node];
+      if (node?.branches) {
+        console.warn(`⚠️  Current node has ${node.branches.length} branches but no 'Branch: N' found in result. Will prompt for branch selection.`);
+      }
+    }
   }
 
   // Advance to next node
