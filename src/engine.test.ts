@@ -193,7 +193,7 @@ describe("next", () => {
   it("throws on invalid branch number", () => {
     engine.define(branchYaml);
     engine.start("branchy");
-    expect(() => engine.next(5, "branchy")).toThrow("between 1 and 2");
+    expect(() => engine.next(5, "branchy")).toThrow("Branch 5 out of range (1-2)");
   });
 });
 

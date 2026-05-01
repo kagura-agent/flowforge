@@ -13,13 +13,25 @@ export interface FlowAction {
 
 function loadWorkflow(name: string): Workflow {
   const row = db.getWorkflow(name);
-  if (!row) throw new Error(`Workflow '${name}' not found`);
+  if (!row) {
+    const all = db.listWorkflows();
+    const hint = all.length
+      ? `\nKnown workflows: ${all.map(w => w.name).join(', ')}`
+      : '\nNo workflows defined yet.';
+    throw new Error(`Workflow '${name}' not found.${hint}`);
+  }
   return parseWorkflow(row.yaml_content);
 }
 
 function requireActiveInstance(workflowName?: string) {
   const inst = db.getActiveInstance(workflowName);
-  if (!inst) throw new Error("No active instance. Use 'flowforge start <workflow>' first.");
+  if (!inst) {
+    const workflows = db.listWorkflows();
+    const available = workflows.length
+      ? `\nAvailable workflows: ${workflows.map(w => w.name).join(', ')}\n\nExample: flowforge start ${workflows[0].name}`
+      : '\nNo workflows defined. Use: flowforge start <path-to-yaml>';
+    throw new Error(`No active instance.${available}`);
+  }
   return inst;
 }
 
@@ -81,7 +93,10 @@ export function next(branch?: number, workflowName?: string) {
       );
     }
     if (branch < 1 || branch > node.branches.length) {
-      throw new Error(`Branch must be between 1 and ${node.branches.length}`);
+      const lines = node.branches.map((b, i) => `  ${i + 1}. ${b.condition} → ${b.next}`);
+      throw new Error(
+        `Branch ${branch} out of range (1-${node.branches.length}). Valid branches:\n${lines.join('\n')}\n\nExample: flowforge next --branch 1`
+      );
     }
     const chosen = node.branches[branch - 1];
     nextNode = chosen.next;
