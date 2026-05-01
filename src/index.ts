@@ -79,9 +79,10 @@ program
 program
   .command("status")
   .description("Show current node, task, and available branches")
-  .action(() => {
+  .option("-w, --workflow <name>", "Target a specific workflow")
+  .action((opts) => {
     try {
-      printStatus();
+      printStatus(opts.workflow);
     } catch (e: any) {
       console.error(`Error: ${e.message}`);
       process.exit(1);
@@ -92,15 +93,16 @@ program
   .command("next")
   .description("Complete current node and move to next")
   .option("--branch <N>", "Branch number (1-indexed) for branching nodes", parseInt)
+  .option("-w, --workflow <name>", "Target a specific workflow")
   .option("--notify", "Output a notification message for the user (e.g. Luna)")
   .action((opts) => {
     try {
-      const result = engine.next(opts.branch);
+      const result = engine.next(opts.branch, opts.workflow);
       if (result.terminal) {
         console.log(`\n✅ ${result.from} → (end) — Workflow complete!\n`);
       } else {
         console.log(`\n${result.from} → ${result.to}${result.branchTaken ? ` (${result.branchTaken})` : ""}\n`);
-        printStatus();
+        printStatus(opts.workflow);
       }
       if (opts.notify) {
         if (result.terminal) {
@@ -288,8 +290,8 @@ program
   });
 
 
-function printStatus() {
-  const s = engine.status();
+function printStatus(workflowName?: string) {
+  const s = engine.status(workflowName);
   console.log(`\n📍 Current: ${s.currentNode}`);
   console.log(`📋 Task: ${s.task}`);
   if (s.terminal) {
