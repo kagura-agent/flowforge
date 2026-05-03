@@ -144,38 +144,89 @@ nodes:
       next: reflect
 
   study:
-    task: "深入研究选中的项目和 issue：\n1. **必须先读笔记**（不能跳过）：\n   a. cat ~/.openclaw/workspace/wiki/projects/<项目名>.md\
-      \ — wiki 笔记\n   b. 如果文件不存在，说明这是第一次打这个 repo，要特别小心\n1b. **验证本地测试环境**（第一次打新 repo\
-      \ 时必做，之后跳过）：\n   a. 这个 repo 用什么语言？Go/Python/TS/Java/Rust？\n   b. 本地有对应的运行时吗？`go\
-      \ version` / `python --version` / `node --version`\n   c. 能装依赖吗？`go mod download`\
-      \ / `pip install -e \".[dev]\"` / `npm install`\n   d. 能跑测试吗？找到测试命令（Makefile/pyproject.toml/package.json）跑一遍\n\
-      \   e. **如果环境配不通 → 记到wiki 笔记里，写明卡在哪。但不要因此放弃这个 repo**\n   f. 环境配好后，在wiki 笔记里记录测试命令，下次直接用\n\
-      2. **搜跨项目知识（两步检索，不能跳过）**：\n   a. 从 issue 标题/描述提取 2-3 个关键词\n   b. cd ~/.openclaw/workspace/wiki\
-      \ && MEMEX_HOME=. memex search\
-      \ \"<关键词>\"\n   c. 搜到相关卡片 → 读一下，看有没有已有洞察能指导实现\n   d. **backlink 扩展**：对每个命中的卡片跑 `MEMEX_HOME=. memex backlinks <slug>`，拉出关联卡片，读取最相关的 1-2 个（向量找入口，图谱做扩展）\n   e. 没搜到 → 继续，不纠结
-   f. **⚠️ 不能跳过这一步** — 写了 memex 就必须用，跳过 = 违反"自己的工具必须用"\n3. **学习维护者**（从wiki\
-      \ 笔记读，不是现场查）：\n   a. wiki 笔记里应该已有维护者模式（reflect 时沉淀的）\n   b. 如果笔记里没有，说明这是第一次打这个\
-      \ repo——此时才去查最近 merged PR\n   c. 注意：他们怎么写测试？怎么处理边界？PR 描述什么格式？\n3. 读 CONTRIBUTING.md，**重点关注**：\n\
-      \   a. PR 流程要求（changeset？CLA？签名？）（教训：stagehand 没加 changeset 被关）\n   b. 代码风格/lint\
-      \ 要求\n   c. 测试要求\n4. 涉及 RFC/标准规范的修改？→ 先读原始 RFC 文档再写代码，不凭经验猜 API（教训：Acontext\
-      \ #509 RFC 5987 编码用错 API）\n5. 理解相关代码模块的结构\n5b. **方向存活检查**（check-before-invest，3次教训升级）：\n\
-      \   a. 这个 issue 涉及的模块/依赖/方向还在项目 roadmap 上吗？\n   b. `git log --oneline -10 --\
-      \ <相关目录>` 看最近是否有大规模重写或删除\n   c. issue 评论里有没有 maintainer 说\"这个方向要废弃/重写\"？\n \
-      \  d. 涉及第三方依赖？查是否有安全事件或被弃用的讨论\n   e. 如果方向已死 → 退回 find_work，不浪费时间（教训：DeepTutor\
-      \ litellm 废弃白做 PR）\n6. 确认 issue 的根因或需求\n7. **查近期修复**：`git log --oneline -20\
-      \ -- <相关文件>` 看有没有近期 commit 已经修了这个 issue\n   - 如果发现已修但 issue 未关闭，在 issue 下评论指出，然后退回\
-      \ find_work\n7. 确认没有人在做同一个 issue（检查 issue 下的关联 PR 和评论）\n8. 评估是否真的能在这个 repo 修（不是上游问题）\n\
-      9. **提 PR 前 5 问**（全过才提）：\n   a. 这个 PR 只解决一个问题吗？\n   b. 上游没有已有修复或竞争 PR 吗？\n \
-      \  c. 我读了 CONTRIBUTING.md 和最近的 merge 模式吗？\n   d. 我能验证这个修复吗？\n   e. 这个 repo 我的\
-      \ open PR ≤ 3 吗？（超过就停，等已有 PR 被消化）\n汇报你的理解和实现计划，包含从笔记和维护者 PR 中学到的关键信息。\n"
+    task: |
+      深入研究选中的项目和 issue：
+      1. **必须先读笔记**（不能跳过）：
+         a. cat ~/.openclaw/workspace/wiki/projects/<项目名>.md— wiki 笔记
+         b. 如果文件不存在，说明这是第一次打这个 repo，要特别小心
+      1b. **验证本地测试环境**（第一次打新 repo时必做，之后跳过）：
+         a. 这个 repo 用什么语言？Go/Python/TS/Java/Rust？
+         b. 本地有对应的运行时吗？`goversion` / `python --version` / `node --version`
+         c. 能装依赖吗？`go mod download`/ `pip install -e ".[dev]"` / `npm install`
+         d. 能跑测试吗？找到测试命令（Makefile/pyproject.toml/package.json）跑一遍
+        e. **如果环境配不通 → 记到wiki 笔记里，写明卡在哪。但不要因此放弃这个 repo**
+         f. 环境配好后，在wiki 笔记里记录测试命令，下次直接用
+      \
+            2. **搜跨项目知识（两步检索，不能跳过）**：
+         a. 从 issue 标题/描述提取 2-3 个关键词
+         b. cd ~/.openclaw/workspace/wiki && MEMEX_HOME=. memex search "<关键词>"
+         c. 搜到相关卡片 → 读一下，看有没有已有洞察能指导实现
+         d. **backlink 扩展**：对每个命中的卡片跑 `MEMEX_HOME=. memex backlinks <slug>`，拉出关联卡片，读取最相关的 1-2 个（向量找入口，图谱做扩展）
+         e. 没搜到 → 继续，不纠结
+        f. **⚠️ 不能跳过这一步** — 写了 memex 就必须用，跳过 = 违反"自己的工具必须用"
+      3. **学习维护者**（从wiki笔记读，不是现场查）：
+         a. wiki 笔记里应该已有维护者模式（reflect 时沉淀的）
+         b. 如果笔记里没有，说明这是第一次打这个repo——此时才去查最近 merged PR
+         c. 注意：他们怎么写测试？怎么处理边界？PR 描述什么格式？
+      3. 读 CONTRIBUTING.md，**重点关注**：
+        a. PR 流程要求（changeset？CLA？签名？）（教训：stagehand 没加 changeset 被关）
+         b. 代码风格/lint要求
+         c. 测试要求
+      4. 涉及 RFC/标准规范的修改？→ 先读原始 RFC 文档再写代码，不凭经验猜 API（教训：Acontext#509 RFC 5987 编码用错 API）
+      5. 理解相关代码模块的结构
+      5b. **方向存活检查**（check-before-invest，3次教训升级）：
+        a. 这个 issue 涉及的模块/依赖/方向还在项目 roadmap 上吗？
+         b. `git log --oneline -10 --<相关目录>` 看最近是否有大规模重写或删除
+         c. issue 评论里有没有 maintainer 说"这个方向要废弃/重写"？
+        d. 涉及第三方依赖？查是否有安全事件或被弃用的讨论
+         e. 如果方向已死 → 退回 find_work，不浪费时间（教训：DeepTutorlitellm 废弃白做 PR）
+      6. 确认 issue 的根因或需求
+      7. **查近期修复**：`git log --oneline -20-- <相关文件>` 看有没有近期 commit 已经修了这个 issue
+         - 如果发现已修但 issue 未关闭，在 issue 下评论指出，然后退回find_work
+      7. 确认没有人在做同一个 issue（检查 issue 下的关联 PR 和评论）
+      8. 评估是否真的能在这个 repo 修（不是上游问题）
+      \
+            9. **提 PR 前 5 问**（全过才提）：
+         a. 这个 PR 只解决一个问题吗？
+         b. 上游没有已有修复或竞争 PR 吗？
+        c. 我读了 CONTRIBUTING.md 和最近的 merge 模式吗？
+         d. 我能验证这个修复吗？
+         e. 这个 repo 我的open PR ≤ 3 吗？（超过就停，等已有 PR 被消化）
+      汇报你的理解和实现计划，包含从笔记和维护者 PR 中学到的关键信息。
+
     branches:
     - condition: issue 可做，计划明确
-      next: implement
+      next: plan
     - condition: issue 不合适（上游问题/竞争PR/太复杂），需要重选
       next: find_work
 
+  plan:
+    task: |
+      **Plan-first phase** — 写出具体实现计划再动手写代码。
+      （灵感来源：Blueprint plan-then-code 分离模式。Planning 和 coding 是不同的 agent skill。）
+
+      基于 study 阶段的理解，产出一份结构化计划：
+
+      1. **变更清单**：列出要改的文件和函数，每个写一句话说明改什么
+      2. **实现方法**：用什么方法解决？有没有已有的 pattern 可以参考（从 wiki 笔记或 memex 搜到的）？
+      3. **边界情况**：这个改动可能影响什么？有没有 ripple effect？
+      4. **测试策略**：怎么验证？改哪些测试？需要加新测试吗？
+      5. **风险点**：什么可能出错？maintainer 可能不同意什么？
+
+      **判断标准**：
+      - 一行修复（typo、import、配置）→ 计划可以很短，2-3 句话
+      - 多文件改动 / 涉及接口变更 → 必须详细列出每个文件的变更
+      - 不确定的地方用 `[?]` 标记，在 implement 时优先验证
+
+      汇报计划。如果写计划过程中发现 issue 比想象的复杂或方向有问题，可以退回 find_work。
+    branches:
+    - condition: 计划明确，可以开始实现
+      next: implement
+    - condition: 发现问题，需要重选
+      next: find_work
+
   implement:
-    task: "按照 study 阶段的计划实现：\n0. **分工决策**：\n   - 代码实现用 acpx exec 同步调 Claude Code：\n\
+    task: "按照 plan 阶段的计划实现（参照变更清单逐项执行）：\n0. **分工决策**：\n   - 代码实现用 acpx exec 同步调 Claude Code：\n\
       \     `cd <repo> && /home/kagura/repo/openclaw/node_modules/.bin/acpx --approve-all\
       \ claude exec \"task\"`\n   - task 必须包含 Claude Code 看不到的上下文：\n     a. 相关的 issue\
       \ 讨论和 reviewer 反馈\n     b. 类似 bug 的已有修复（可作为参考模式）\n     c. 项目架构和代码位置的关键信息\n \
