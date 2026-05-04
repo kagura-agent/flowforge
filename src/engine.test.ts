@@ -141,6 +141,8 @@ describe("start", () => {
 
   it("throws for unknown workflow", () => {
     expect(() => engine.start("nope")).toThrow("not found");
+    // Also check helpful suggestion is included
+    expect(() => engine.start("nope")).toThrow("flowforge list");
   });
 });
 
@@ -196,7 +198,7 @@ describe("next", () => {
   it("throws on invalid branch number", () => {
     engine.define(branchYaml);
     engine.start("branchy");
-    expect(() => engine.next(5, "branchy")).toThrow("between 1 and 2");
+    expect(() => engine.next(5, "branchy")).toThrow("Invalid branch 5");
   });
 });
 

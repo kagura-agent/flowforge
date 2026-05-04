@@ -13,7 +13,7 @@ export interface FlowAction {
 
 function loadWorkflow(name: string): Workflow {
   const row = db.getWorkflow(name);
-  if (!row) throw new Error(`Workflow '${name}' not found`);
+  if (!row) throw new Error(`Workflow '${name}' not found. Use 'flowforge list' to see available workflows.`);
   return parseWorkflow(row.yaml_content);
 }
 
@@ -80,7 +80,10 @@ export function next(branch?: number, workflowName?: string) {
       );
     }
     if (branch < 1 || branch > node.branches.length) {
-      throw new Error(`Branch must be between 1 and ${node.branches.length}`);
+      const lines = node.branches.map((b, i) => `  ${i + 1}. ${b.condition} → ${b.next}`);
+      throw new Error(
+        `Invalid branch ${branch}. Valid options (1-${node.branches.length}):\n${lines.join("\n")}\n\nExample: flowforge next --branch 1`
+      );
     }
     const chosen = node.branches[branch - 1];
     nextNode = chosen.next;
