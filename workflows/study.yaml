@@ -104,7 +104,8 @@ nodes:
   followup:
     task: |
       跟进已关注项目的新动态：
-      0. **先查到期项目**：`bash ~/.openclaw/workspace/study/tracking-due.sh` 看哪些 tracking item 到了 revisit 日期
+      0. **先看组合健康**：`bash ~/.openclaw/workspace/study/tracking-health.sh` — 如果 auto-drop candidates > 5 或总量 > 40，先清理再跟进
+      0a. **再查到期项目**：`bash ~/.openclaw/workspace/study/tracking-due.sh` 看哪些 tracking item 到了 revisit 日期
       0b. **先搜已有知识**：对要跟进的项目 `cd ~/.openclaw/workspace/wiki && MEMEX_HOME=. memex search "<项目名>" --limit 5`，带着上次认知进入
       1. 优先跟进到期的 tracking items，其次读 wiki/projects/ 找活跃项目
       2. 选 2-3 个，检查最近变化：
