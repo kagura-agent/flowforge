@@ -48,6 +48,7 @@ nodes:
       0. **先搜已有知识**（不可跳过）：
          - `cd ~/.openclaw/workspace/wiki && MEMEX_HOME=. memex search "<本轮关键词>" --limit 5`
          - 搜到相关笔记就先读，避免重复研究已知项目
+         ⛔ 借口"我已经知道这个项目了" → 知识衰减真实存在，上次的笔记可能有你忘了的细节
       1. 看 GitHub trending（AI/agent 相关）、HN、Twitter/X 上最近在讨论什么
          **优先用 GitHub API search**（`gh api search/repositories?q=topic:ai-agent+created:>YYYY-MM-DD&sort=stars`）比 scrape trending 页更可靠、可复现
       2. 已关注项目有没有大的方向变化（新 release、架构重构、重要讨论）
@@ -122,6 +123,7 @@ nodes:
     task: |
       深入阅读选中项目的代码和文档：
       0. **先读已有知识**（⚠️ 不可跳过，即使觉得已经知道）：
+         ⛔ 借口"这个项目我刚看过" → 刚看过 ≠ 记得细节。30秒扫一眼不会浪费时间，但跳过可能重复研究
          - wiki/projects/项目名.md（如果有，带着上次的认知进入）
          - `grep -rl "关键词" ~/.openclaw/workspace/wiki/` 搜全库（cards + projects 都搜）
          - `cd ~/.openclaw/workspace/wiki && MEMEX_HOME=. memex search "<关键词>" --limit 5` 语义搜索
@@ -169,11 +171,27 @@ nodes:
          - 记架构洞察和反直觉的发现
       4. git commit && git push 到 kagura-agent/wiki
       汇报写了什么。
+
+      **⛔ Anti-rationalization table — 不要跳过笔记：**
+      | 借口 | 反驳 |
+      |---|---|
+      | "这轮没什么新的，不用写" | 没有新发现本身就是信号（生态稳定期、方向验证）。写 1 行趋势判断 |
+      | "来不及了，先 reflect" | 笔记是 reflect 的输入。跳过笔记 = reflect 也变空 |
+      | "已经在 memory 里写过了" | memory 是日志，wiki 是知识库。日志不替代结构化笔记 |
+      | "只是小更新，不值得单独 commit" | 追加 3-5 行到已有文件 + commit 只要 30 秒 |
     next: reflect
 
   reflect:
     task: |
       用 Acontext distillation 结构化反思本轮学习：
+
+      **⛔ Anti-rationalization table — 不要敷衍反思：**
+      | 借口 | 反驳 |
+      |---|---|
+      | "这轮很顺利，没什么失败" | 没有失败 ≠ 没有可改进的。检查：有没有多余步骤？有没有更快的路径？ |
+      | "失败分析写不出来" | 回看实际执行：哪步花了最多时间？哪步的产出最薄？那就是改进点 |
+      | "飞轮更新没什么好改的" | 连续 3 轮说 "无需调整" → 说明你没认真看。至少验证一下 TODO 是否过期 |
+      | "太累了，先提交再说" | 反思是学习的 50% 价值来源。跳过反思 = 这轮学习打五折 |
 
       **成功分析**（学到了什么）：
       - goal: 这轮学习要解决什么问题？

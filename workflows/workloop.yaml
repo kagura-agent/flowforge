@@ -284,7 +284,13 @@ nodes:
       next: implement
 
   reflect:
-    task: "反思本轮打工并**更新项目笔记**（不能跳过）：\n\n**第一步：更新wiki 笔记**（必须做）\n编辑 ~/.openclaw/workspace/wiki/projects/<项目名>.md，追加：\n\
+    task: "反思本轮打工并**更新项目笔记**（不能跳过）：\n\n\
+      ⛔ **Anti-rationalization table:**\n\
+      | 借口 | 反驳 |\n\
+      | \"PR 很顺利，没什么好反思的\" | 顺利≠没改进空间。有没有更快路径？选题有效吗？ |\n\
+      | \"这 repo 打过了，笔记不用更\" | 每次 PR 有新信号（review 风格、CI、竞争 PR）。3 行够 |\n\
+      | \"被关/被 supersede 了，不想看\" | 失败 PR 反思价值 > 成功 PR。写 why 和 prevention |\n\
+      | \"太累了先交了再说\" | 反思是这轮 30% 价值。跳过 = 白做 |\n\n**第一步：更新wiki 笔记**（必须做）\n编辑 ~/.openclaw/workspace/wiki/projects/<项目名>.md，追加：\n\
       - 这次 PR 的结果（merged/pending/closed + 原因）\n- 维护者的 review 风格和偏好（新发现的）\n- **维护者\
       \ PR 模式**：他们怎么写测试、处理边界、描述 PR？（下次 study 要读这些）\n- CI/lint/测试的注意事项\n- 踩过的坑\n- 下次打这个\
       \ repo 该注意什么\n然后：cd ~/.openclaw/workspace/wiki && git add -A && git commit -m\
