@@ -46,6 +46,11 @@ nodes:
 
       处理完后标已读：`gh api -X PUT notifications --field read=true --field last_read_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"`
 
+
+      **🚩 Red Flags — 如果出现以下症状，你在走过场不是在 followup：**
+      - sync 结果出来直接说"全部正常"没有点进去看详情 → 你在读标题不是在处理
+      - 通知全部标已读但没处理任何一条 → 你在清收件箱不是在响应
+      - 跳过了 merged PR 的通知 → post-merge review 是常见模式，不能因为 merged 就跳过
       '
     branches:
     - condition: 有待处理的 review 或 CI 问题
@@ -246,7 +251,10 @@ nodes:
       \ 里\n2. Claude Code 完成后：检查他的 commit，review 改动是否正确\n3. 确保代码风格符合项目规范\n4. **push\
       \ 前自检**（不能跳过）：\n   a. `git diff --stat` 看全局影响\n   b. 改了接口/类型？→ grep 所有 import\
       \ 这个接口的文件，确认 mock/stub 同步了\n   c. 项目有测试命令？→ 跑。没有本地环境？→ 至少 grep 验证 mock 完整性\n\
-      汇报实现结果和测试状态。\n"
+      \n**\U0001F6A9 Red Flags — 如果出现以下症状，你在赶工不是在实现：**\n\
+      - 跳过了 plan 里的某个变更项但没说原因 → 你忘了或在回避\n- push 前没跑测试就说\"应该没问题\"\
+      \ → 你在猜不是在验证\n- 改了接口但没 grep 相关 mock/stub 文件 → CI 会告诉你\n- acpx exec 的\
+      \ task 里没包含上下文（issue 讨论/维护者偏好）→ Claude Code 会猜着做\n汇报实现结果和测试状态。\n"
     next: submit
 
   submit:
