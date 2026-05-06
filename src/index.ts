@@ -79,9 +79,10 @@ program
 program
   .command("status")
   .description("Show current node, task, and available branches")
-  .action(() => {
+  .option("-w, --workflow <name>", "Target a specific workflow (when multiple are active)")
+  .action((opts) => {
     try {
-      printStatus();
+      printStatus(opts.workflow);
     } catch (e: any) {
       console.error(`Error: ${e.message}`);
       process.exit(1);
@@ -92,10 +93,11 @@ program
   .command("next")
   .description("Complete current node and move to next")
   .option("--branch <N>", "Branch number (1-indexed) for branching nodes", parseInt)
+  .option("-w, --workflow <name>", "Target a specific workflow (when multiple are active)")
   .option("--notify", "Output a notification message for the user (e.g. Luna)")
   .action((opts) => {
     try {
-      const result = engine.next(opts.branch);
+      const result = engine.next(opts.branch, opts.workflow);
       if (result.plateauWarning) {
         console.log(`\n⚠️ ${result.plateauWarning}`);
       }
@@ -103,14 +105,14 @@ program
         console.log(`\n✅ ${result.from} → (end) — Workflow complete!\n`);
       } else {
         console.log(`\n${result.from} → ${result.to}${result.branchTaken ? ` (${result.branchTaken})` : ""}\n`);
-        printStatus();
+        printStatus(opts.workflow);
       }
       if (opts.notify) {
         if (result.terminal) {
           console.log("---NOTIFY---");
           console.log(`✅ Workflow 完成：${result.from} → 结束`);
         } else {
-          const s = engine.status();
+          const s = engine.status(opts.workflow);
           console.log("---NOTIFY---");
           console.log(`🔄 Workflow 进度：${result.from} → ${s.currentNode}`);
           console.log(`📋 当前任务：${s.task.trim().split("\n")[0]}`);
@@ -128,9 +130,10 @@ program
 program
   .command("log")
   .description("Show history of nodes visited")
-  .action(() => {
+  .option("-w, --workflow <name>", "Target a specific workflow (when multiple are active)")
+  .action((opts) => {
     try {
-      const { workflowName, instanceId, entries } = engine.log();
+      const { workflowName, instanceId, entries } = engine.log(opts.workflow);
       console.log(`\nWorkflow: ${workflowName} (instance #${instanceId})\n`);
       for (const e of entries) {
         const branch = e.branch_taken ? ` [${e.branch_taken}]` : "";
@@ -175,11 +178,12 @@ program
 program
   .command("reset")
   .description("Reset current instance back to start node")
-  .action(() => {
+  .option("-w, --workflow <name>", "Target a specific workflow (when multiple are active)")
+  .action((opts) => {
     try {
-      const { id, node } = engine.reset();
+      const { id, node } = engine.reset(opts.workflow);
       console.log(`Reset. New instance #${id} at node '${node}'.`);
-      printStatus();
+      printStatus(opts.workflow);
     } catch (e: any) {
       console.error(`Error: ${e.message}`);
       process.exit(1);
@@ -209,6 +213,7 @@ program
   .command("advance")
   .description("Advance workflow with result and output next action as JSON")
   .option("--result <text>", "Result text from previous step")
+  .option("-w, --workflow <name>", "Target a specific workflow (when multiple are active)")
   .action((opts) => {
     try {
       let result = opts.result;
@@ -219,7 +224,7 @@ program
         result = fs.readFileSync(0, "utf-8").trim();
       }
 
-      const action = engine.advanceWithResult(result);
+      const action = engine.advanceWithResult(result, opts.workflow);
       console.log(JSON.stringify({ action }, null, 2));
     } catch (e: any) {
       console.error(`Error: ${e.message}`);
@@ -228,8 +233,8 @@ program
   });
 
 
-function printStatus() {
-  const s = engine.status();
+function printStatus(workflowName?: string) {
+  const s = engine.status(workflowName);
   console.log(`\n📍 Current: ${s.currentNode}`);
   console.log(`📋 Task: ${s.task}`);
   if (s.terminal) {
