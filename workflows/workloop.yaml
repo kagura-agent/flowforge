@@ -248,7 +248,7 @@ nodes:
       \ confirm no files were missed.\"\n   - 一行级别的简单修复可以自己做，不需要调 Claude Code\n  \
       \ - **效率 tip**：大文件（1000+ 行）的简单修复（< 20 行改动），手动改比 acpx exec 更高效\n   - acpx exec\
       \ 超时默认 300 秒，大文件可能不够，评估后决定手动还是调 agent\n1. acpx exec 是同步的 — 等它跑完结果直接在 stdout\
-      \ 里\n2. Claude Code 完成后：检查他的 commit，review 改动是否正确\n3. 确保代码风格符合项目规范\n4. **push\
+      \ 里\n2. Claude Code 完成后：**机械验证**（不能跳过）：\n     运行 `bash ~/.openclaw/workspace/flowforge/scripts/verify-claims.sh <repo-dir> [expected-files...]`\n     expected-files = plan 阶段列出的变更文件。脚本检查：文件确实被修改（git diff）、没有遗留 unstaged changes、修改文件非空、无 conflict markers。\n     脚本返回 FAILED → 回去修，不要继续\n3. Review commit 改动是否正确\n4. 确保代码风格符合项目规范\n5. **push\
       \ 前自检**（不能跳过）：\n   a. `git diff --stat` 看全局影响\n   b. 改了接口/类型？→ grep 所有 import\
       \ 这个接口的文件，确认 mock/stub 同步了\n   c. 项目有测试命令？→ 跑。没有本地环境？→ 至少 grep 验证 mock 完整性\n\
       \n**\U0001F6A9 Red Flags — 如果出现以下症状，你在赶工不是在实现：**\n\
@@ -266,6 +266,9 @@ nodes:
 
       **必须提供以下证据（复制粘贴实际输出，不是描述）：**
 
+      0. **verify-claims 输出**：粘贴 `bash ~/.openclaw/workspace/flowforge/scripts/verify-claims.sh <repo-dir>` 的完整输出
+         - 脚本必须返回 VERIFICATION PASSED 才能继续
+         - 返回 FAILED → 不通过，回 implement 修
       1. **测试输出**：粘贴 `npm test` / `pytest` / `go test` 等的实际输出（至少最后 10 行）
          - 如果项目没有测试命令 → 粘贴 `tsc --noEmit` 或 lint 输出
          - 如果都没有 → 明确写"该项目无测试/lint 命令"并说明你做了什么替代验证
