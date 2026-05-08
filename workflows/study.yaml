@@ -32,6 +32,12 @@ nodes:
       - 连续侦察 2 次以上 → 优先选应用或跟进
       - 连续应用 2 次以上 → 优先选侦察或跟进
       - 不确定 → 快速扫描是最安全的选择
+
+      **⛔ 饱和上限（硬性规则）**：
+      - 同一天 quick_scout ≥ 3 次 → **禁止再选快速扫描**。只能选应用或跟进。
+        检查方法：`grep -c "quick_scout\|quick_scan\|Quick Scan\|Quick Scout" ~/.openclaw/workspace/memory/$(date +%Y-%m-%d).md`
+        ≥ 3 → 锁定。不允许用"这次不同"合理化第 4 次。
+      - 连续 2 天每天 ≥3 次 quick scan → 生态确认稳定期，降频到每天 max 1 次 quick scan，其余走 apply
     branches:
       - condition: "侦察新东西"
         next: scout
