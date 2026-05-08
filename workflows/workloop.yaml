@@ -233,9 +233,42 @@ nodes:
       汇报计划。如果写计划过程中发现 issue 比想象的复杂或方向有问题，可以退回 find_work。
     branches:
     - condition: 计划明确，可以开始实现
-      next: implement
+      next: plan_review
     - condition: 发现问题，需要重选
       next: find_work
+
+  plan_review:
+    task: |
+      **Independent Plan Review Gate** — 不允许自评审，必须用 subagent 独立评审计划。
+      （灵感来源：GenericAgent mandatory subagent review gate — 分离 planning 和 validation 角色。）
+
+      **步骤：**
+      1. 把 plan 阶段产出的计划（变更清单 + 实现方法 + 测试策略）整理为简洁文本
+      2. spawn 一个 subagent（mode=run），给它以下指令：
+         ```
+         你是一个代码审查员。评审以下实现计划，给出 1-10 分并附简短理由。
+         评审维度：
+         - Scope 是否最小化？有没有不必要的额外改动？
+         - 是否在修根因而非绕症状？
+         - 测试策略是否覆盖了核心变更？
+         - 有没有明显的风险/遗漏？
+         - 是否符合 maintainer 偏好（如果已知）？
+         
+         如果分数 < 7，指出具体问题。
+         如果分数 >= 7，回复 APPROVED。
+         ```
+      3. subagent 只看到计划文本，不看 study/context — 这样强制独立判断
+      4. **结果处理：**
+         - APPROVED (>=7) → 继续到 implement
+         - NOT APPROVED (<7) → 根据反馈修改计划，回 plan 重来
+
+      **⚠️ 不允许跳过这一步。** 即使计划看起来很简单（一行修复除外——如果 plan 阶段已说明是 trivial fix，可以直接过）。
+      自己觉得"这个计划没问题不需要审"= 你在自评审 = 违反规则。
+    branches:
+    - condition: Subagent APPROVED (score >= 7)
+      next: implement
+    - condition: Subagent NOT APPROVED (score < 7)，需要修改计划
+      next: plan
 
   implement:
     task: "按照 plan 阶段的计划实现（参照变更清单逐项执行）：\n0. **分工决策**：\n   - 代码实现用 acpx exec 同步调 Claude Code：\n\
