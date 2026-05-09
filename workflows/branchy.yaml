@@ -1,0 +1,16 @@
+name: branchy
+start: decide
+nodes:
+  decide:
+    task: make a decision
+    branches:
+      - condition: left
+        next: left_node
+      - condition: right
+        next: right_node
+  left_node:
+    task: go left
+    terminal: true
+  right_node:
+    task: go right
+    terminal: true

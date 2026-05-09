@@ -1,0 +1,6 @@
+name: looper
+start: work
+nodes:
+  work:
+    task: do work
+    next: work

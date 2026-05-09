@@ -1,0 +1,9 @@
+name: linear
+start: step1
+nodes:
+  step1:
+    task: do step 1
+    next: step2
+  step2:
+    task: do step 2
+    terminal: true

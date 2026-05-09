@@ -1,0 +1,10 @@
+name: sub
+start: s1
+nodes:
+  s1:
+    task: agent task
+    executor: subagent
+    next: s2
+  s2:
+    task: done
+    terminal: true

@@ -1,0 +1,12 @@
+[project]
+name = "flowforge"
+version = "1.2.3"
+description = "Enforced workflow engine for AI agents"
+requires-python = ">=3.10"
+dependencies = ["pyyaml"]
+
+[project.optional-dependencies]
+test = ["pytest"]
+
+[tool.pytest.ini_options]
+testpaths = ["test_flowforge.py"]

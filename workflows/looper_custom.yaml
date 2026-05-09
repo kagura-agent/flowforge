@@ -1,0 +1,7 @@
+name: looper_custom
+start: work
+nodes:
+  work:
+    task: do work
+    max_visits: 3
+    next: work
