@@ -128,7 +128,7 @@ nodes:
       1. 优先跟进到期的 tracking items，其次读 wiki/projects/ 找活跃项目
       2. 选 2-3 个，检查最近变化：
          - 大的 PR 被 merge（架构重构、新 feature）
-         - 重要的 issue 讨论（设计决策、方向争论）
+         - 重要的 issue 讨论（设计决策、方向争论）— **优先找批评性 issue**（architecture critiques 暴露架构假设比读源码更快）
          - 新的 release
       3. 有没有跟我们方向相关的新信号？
       汇报哪些项目有值得深入的新动态。
@@ -151,12 +151,18 @@ nodes:
       1. 如果是新项目：clone，读 README、架构文档、核心模块
       2. 如果是已关注项目：读新变化的代码，理解设计决策
       3. **先读 test 文件**：test/ 目录往往比文档更准确地展示 API 用法和边界
-      4. 重点关注：
+      4. **扫 Issues 找批评者**（⚠️ 高效捷径，不可跳过）：
+         `gh issue list -R owner/repo --state all --limit 20 --json title,body,author,labels,comments`
+         重点看：architecture critiques, design debates, bug reports that expose assumptions.
+         一条高质量批评 = 数小时源码阅读。批评者指出的缺陷直接暴露架构假设和薄弱点。
+         **Insight origin**: mirage/@eouzoe (05-09) — 5 条 issue 揭示了 credential isolation, session isolation,
+         cache invalidation, snapshot fidelity, shell coverage 五个架构盲点，比读全部源码更快。
+      5. 重点关注：
          - 这个项目在解决什么问题？为什么现在？
          - 架构模式（为什么这样设计？有什么 tradeoff？）
          - 跟 agent 生态的其他项目是什么关系？（竞争？互补？上下游？）
          - 跟我们的方向有什么关联？
-      4. 带着问题读，不是漫无目的地浏览
+      5. 带着问题读，不是漫无目的地浏览
 
       **🚩 Red Flags — 如果出现以下症状，你在浏览不是在深读：**
       - 笔记里大段引用 README 但没有自己的分析 → 你在搬运不是在理解
