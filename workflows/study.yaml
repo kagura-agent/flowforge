@@ -38,6 +38,11 @@ nodes:
         检查方法：`grep -c "quick_scout\|quick_scan\|Quick Scan\|Quick Scout" ~/.openclaw/workspace/memory/$(date +%Y-%m-%d).md`
         ≥ 3 → 锁定。不允许用"这次不同"合理化第 4 次。
       - 连续 2 天每天 ≥3 次 quick scan → 生态确认稳定期，降频到每天 max 1 次 quick scan，其余走 apply
+      - 同一天 apply ≥ 3 次 → **禁止再选应用**。只能选侦察或跟进。
+        检查方法：`grep -c "^## Study Apply\|^## Study.*Apply" ~/.openclaw/workspace/memory/$(date +%Y-%m-%d).md`
+        ≥ 3 → 锁定。原理：apply 收益递减明显——前 2 次通常有实质改动，第 3 次开始找「能应用的东西」本身就是强迫行为。
+      - **周末降级**（周六日）：followup 低信号（多数项目周末不活跃），优先选 apply 或 scout。
+        如果选 followup，只做到期项目，不扩展。
     branches:
       - condition: "侦察新东西"
         next: scout
