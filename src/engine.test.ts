@@ -352,5 +352,50 @@ describe("plateau detection", () => {
     engine.start("linear");
     const result = engine.next(undefined, "linear");
     expect(result.plateauWarning).toBeUndefined();
+    expect(result.plateauLevel).toBe('ok');
+    expect(result.blocked).toBe(false);
+  });
+
+  it("graduates from nudge to block after limit+2", () => {
+    engine.define(loopCustomYaml);
+    engine.start("looper_custom");
+    // max_visits=3. Start=1 visit. next() x2 = 3 visits (nudge on 3rd).
+    for (let i = 0; i < 2; i++) {
+      engine.next(undefined, "looper_custom");
+    }
+    // 3rd next: nudge level (visits=3, limit=3)
+    const nudge = engine.next(undefined, "looper_custom");
+    expect(nudge.plateauLevel).toBe('nudge');
+    expect(nudge.blocked).toBe(false);
+    expect(nudge.plateauWarning).toContain('LOOP DETECTED');
+
+    // 4th next: still nudge (visits=4, limit=3, not yet limit+2=5)
+    const stillNudge = engine.next(undefined, "looper_custom");
+    expect(stillNudge.plateauLevel).toBe('nudge');
+    expect(stillNudge.blocked).toBe(false);
+
+    // 5th next: block (visits=5, limit+2=5)
+    const blocked = engine.next(undefined, "looper_custom");
+    expect(blocked.plateauLevel).toBe('block');
+    expect(blocked.blocked).toBe(true);
+    expect(blocked.plateauWarning).toContain('BLOCKED');
+  });
+
+  it("allows --force to override block", () => {
+    engine.define(loopCustomYaml);
+    engine.start("looper_custom");
+    // Advance to block state: max_visits=3, need visits=5 (limit+2)
+    for (let i = 0; i < 4; i++) {
+      engine.next(undefined, "looper_custom");
+    }
+    // This should be blocked
+    const blocked = engine.next(undefined, "looper_custom");
+    expect(blocked.blocked).toBe(true);
+
+    // Force override
+    const forced = engine.next(undefined, "looper_custom", true);
+    expect(forced.blocked).toBe(false);
+    expect(forced.plateauLevel).toBe('block');
+    expect(forced.plateauWarning).toContain('BLOCKED');
   });
 });

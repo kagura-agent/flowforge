@@ -63,7 +63,7 @@ export function status(workflowName?: string) {
   };
 }
 
-export function next(branch?: number, workflowName?: string) {
+export function next(branch?: number, workflowName?: string, force?: boolean) {
   const inst = requireActiveInstance(workflowName);
   const wf = loadWorkflow(inst.workflow_name);
   const node = wf.nodes[inst.current_node];
@@ -107,12 +107,35 @@ export function next(branch?: number, workflowName?: string) {
     throw new Error("Node has no next, branches, or terminal — this should not happen");
   }
 
-  // Check plateau: how many times has nextNode been visited?
+  // Graduated loop detection (inspired by AIDE's LoopDetector pattern):
+  //   observe  → visits < limit: silent, just track
+  //   nudge    → visits = limit: warn + inject reflection into task
+  //   block    → visits >= limit + 2: hard block, refuse to advance without --force
   let plateauWarning: string | undefined;
+  let plateauLevel: 'ok' | 'nudge' | 'block' = 'ok';
   const visits = db.getNodeVisitCount(inst.id, nextNode);
   const limit = wf.nodes[nextNode]?.max_visits ?? 5;
-  if (visits >= limit) {
-    plateauWarning = `Node ${nextNode} visited ${visits} times (limit: ${limit}). Consider breaking the loop or adjusting strategy.`;
+  if (visits >= limit + 2) {
+    plateauLevel = 'block';
+    plateauWarning = `⛔ BLOCKED: Node '${nextNode}' visited ${visits} times (limit: ${limit}). You are looping without progress. Use --force to override, or choose a different branch/strategy.`;
+  } else if (visits >= limit) {
+    plateauLevel = 'nudge';
+    plateauWarning = `⚠️ LOOP DETECTED: Node '${nextNode}' visited ${visits} times (limit: ${limit}). Before continuing, reflect: Are you making real progress or repeating the same approach? What would you do differently?`;
+  }
+
+  // Block advancement if plateau level is 'block' (unless forced)
+  if (plateauLevel === 'block' && !force) {
+    return {
+      from: inst.current_node,
+      to: nextNode,
+      branchTaken,
+      task: '',
+      branches: null,
+      hasNext: false,
+      plateauWarning,
+      plateauLevel,
+      blocked: true,
+    };
   }
 
   // Close current history entry, move to next node, open new history entry
@@ -129,6 +152,8 @@ export function next(branch?: number, workflowName?: string) {
     branches: nextNodeDef.branches || null,
     hasNext: !!nextNodeDef.next,
     plateauWarning,
+    plateauLevel,
+    blocked: false,
   };
 }
 

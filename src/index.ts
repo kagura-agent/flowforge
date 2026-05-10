@@ -94,12 +94,18 @@ program
   .description("Complete current node and move to next")
   .option("--branch <N>", "Branch number (1-indexed) for branching nodes", parseInt)
   .option("-w, --workflow <name>", "Target a specific workflow (when multiple are active)")
+  .option("--force", "Override loop detection block")
   .option("--notify", "Output a notification message for the user (e.g. Luna)")
   .action((opts) => {
     try {
-      const result = engine.next(opts.branch, opts.workflow);
+      const result = engine.next(opts.branch, opts.workflow, opts.force);
+      if (result.blocked) {
+        console.log(`\n${result.plateauWarning}`);
+        console.log(`\nUse: flowforge next --force to override.`);
+        return;
+      }
       if (result.plateauWarning) {
-        console.log(`\n⚠️ ${result.plateauWarning}`);
+        console.log(`\n${result.plateauWarning}`);
       }
       if (result.terminal) {
         console.log(`\n✅ ${result.from} → (end) — Workflow complete!\n`);
