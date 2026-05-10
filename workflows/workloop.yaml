@@ -47,15 +47,16 @@ nodes:
       处理完后标已读：`gh api -X PUT notifications --field read=true --field last_read_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"`
 
 
-      **🚩 Red Flags — 如果出现以下症状，你在走过场不是在 followup：** - sync 结果出来直接说"全部正常"没有点进去看详情 → 你在读标题不是在处理 - 通知全部标已读但没处理任何一条 → 你在清收件箱不是在响应 - 跳过了 merged PR 的通知 → post-merge review 是常见模式，不能因为 merged 就跳过 '
+      **🚩 Red Flags — 如果出现以下症状，你在走过场不是在 followup：** - sync 结果出来直接说"全部正常"没有点进去看详情 → 你在读标题不是在处理 - 通知全部标已读但没处理任何一条 → 你在清收件箱不是在响应
+      - 跳过了 merged PR 的通知 → post-merge review 是常见模式，不能因为 merged 就跳过 '
     branches:
     - condition: 有待处理的 review 或 CI 问题
       next: handle_feedback
     - condition: 所有 PR 状态正常，没有待处理的
       next: find_work
   handle_feedback:
-    task: "处理上一步发现的 PR 反馈：\n1. 读 review 评论，理解要求\n2. 修改代码\n3. **本地测试**（不能跳过）：\n   a. 读wiki 笔记里的测试命令\n   b. 跑测试，确认全过\n   c. 改了接口/类型？→ grep 所有 mock/stub 文件，确认同步\n   d. `git diff --stat` 检查有没有遗漏的文件\n4. 提交并\
-      \ push\n5. 在 PR 上回复 reviewer\n处理完所有反馈后汇报结果。\n"
+    task: "处理上一步发现的 PR 反馈：\n1. 读 review 评论，理解要求\n2. 修改代码\n3. **本地测试**（不能跳过）：\n   a. 读wiki 笔记里的测试命令\n   b. 跑测试，确认全过\n   c.\
+      \ 改了接口/类型？→ grep 所有 mock/stub 文件，确认同步\n   d. `git diff --stat` 检查有没有遗漏的文件\n4. 提交并 push\n5. 在 PR 上回复 reviewer\n处理完所有反馈后汇报结果。\n"
     terminal: true
   find_work:
     task: '用 gogetajob scan --all 扫描所有活跃公司（公司列表从 gogetajob DB 读取，不硬编码）。
@@ -156,16 +157,23 @@ nodes:
     - condition: 没找到合适的新项目
       next: reflect
   study:
-    task: "深入研究选中的项目和 issue：\n1. **必须先读笔记**（不能跳过）：\n   a. cat ~/.openclaw/workspace/wiki/projects/<项目名>.md— wiki 笔记\n   b. 如果文件不存在，说明这是第一次打这个 repo，要特别小心\n1b. **验证本地测试环境**（第一次打新 repo时必做，之后跳过）：\n   a. 这个\
-      \ repo 用什么语言？Go/Python/TS/Java/Rust？\n   b. 本地有对应的运行时吗？`goversion` / `python --version` / `node --version`\n   c. 能装依赖吗？`go mod download`/ `pip install -e \".[dev]\"` / `npm install`\n   d. 能跑测试吗？找到测试命令（Makefile/pyproject.toml/package.json）跑一遍\n\
-      \  e. **如果环境配不通 → 记到wiki 笔记里，写明卡在哪。但不要因此放弃这个 repo**\n   f. 环境配好后，在wiki 笔记里记录测试命令，下次直接用\n\\\n      2. **搜跨项目知识（两步检索，不能跳过）**：\n   a. 从 issue 标题/描述提取 2-3 个关键词\n   b. cd ~/.openclaw/workspace/wiki &&\
-      \ MEMEX_HOME=. memex search \"<关键词>\"\n   c. 搜到相关卡片 → 读一下，看有没有已有洞察能指导实现\n   d. **backlink 扩展**：对每个命中的卡片跑 `MEMEX_HOME=. memex backlinks <slug>`，拉出关联卡片，读取最相关的 1-2 个（向量找入口，图谱做扩展）\n   e. 没搜到 → 继续，不纠结\n\
-      \  f. **⚠️ 不能跳过这一步** — 写了 memex 就必须用，跳过 = 违反\"自己的工具必须用\"\n3. **学习维护者**（从wiki笔记读，不是现场查）：\n   a. wiki 笔记里应该已有维护者模式（reflect 时沉淀的）\n   b. 如果笔记里没有，说明这是第一次打这个repo——此时才去查最近 merged PR\n   c. 注意：他们怎么写测试？怎么处理边界？PR\
-      \ 描述什么格式？\n3. 读 CONTRIBUTING.md，**重点关注**：\n  a. PR 流程要求（changeset？CLA？签名？）（教训：stagehand 没加 changeset 被关）\n   b. 代码风格/lint要求\n   c. 测试要求\n4. 涉及 RFC/标准规范的修改？→ 先读原始 RFC 文档再写代码，不凭经验猜 API（教训：Acontext#509\
-      \ RFC 5987 编码用错 API）\n5. 理解相关代码模块的结构\n5b. **方向存活检查**（check-before-invest，3次教训升级）：\n  a. 这个 issue 涉及的模块/依赖/方向还在项目 roadmap 上吗？\n   b. `git log --oneline -10 --<相关目录>` 看最近是否有大规模重写或删除\n   c. issue 评论里有没有\
-      \ maintainer 说\"这个方向要废弃/重写\"？\n  d. 涉及第三方依赖？查是否有安全事件或被弃用的讨论\n   e. 如果方向已死 → 退回 find_work，不浪费时间（教训：DeepTutorlitellm 废弃白做 PR）\n6. 确认 issue 的根因或需求\n7. **查近期修复**：`git log --oneline -20-- <相关文件>` 看有没有近期\
-      \ commit 已经修了这个 issue\n   - 如果发现已修但 issue 未关闭，在 issue 下评论指出，然后退回find_work\n7. 确认没有人在做同一个 issue（检查 issue 下的关联 PR 和评论）\n8. 评估是否真的能在这个 repo 修（不是上游问题）\n\\\n      9. **提 PR 前 5 问**（全过才提）：\n   a. 这个 PR\
-      \ 只解决一个问题吗？\n   b. 上游没有已有修复或竞争 PR 吗？\n  c. 我读了 CONTRIBUTING.md 和最近的 merge 模式吗？\n   d. 我能验证这个修复吗？\n   e. 这个 repo 我的open PR ≤ 3 吗？（超过就停，等已有 PR 被消化）\n汇报你的理解和实现计划，包含从笔记和维护者 PR 中学到的关键信息。\n"
+    task: "深入研究选中的项目和 issue：\n1. **必须先读笔记**（不能跳过）：\n   a. cat ~/.openclaw/workspace/wiki/projects/<项目名>.md— wiki 笔记\n   b.\
+      \ 如果文件不存在，说明这是第一次打这个 repo，要特别小心\n1b. **验证本地测试环境**（第一次打新 repo时必做，之后跳过）：\n   a. 这个 repo 用什么语言？Go/Python/TS/Java/Rust？\n\
+      \   b. 本地有对应的运行时吗？`goversion` / `python --version` / `node --version`\n   c. 能装依赖吗？`go mod download`/ `pip install -e\
+      \ \".[dev]\"` / `npm install`\n   d. 能跑测试吗？找到测试命令（Makefile/pyproject.toml/package.json）跑一遍\n  e. **如果环境配不通 → 记到wiki\
+      \ 笔记里，写明卡在哪。但不要因此放弃这个 repo**\n   f. 环境配好后，在wiki 笔记里记录测试命令，下次直接用\n\\\n      2. **搜跨项目知识（两步检索，不能跳过）**：\n   a. 从 issue\
+      \ 标题/描述提取 2-3 个关键词\n   b. cd ~/.openclaw/workspace/wiki && MEMEX_HOME=. memex search \"<关键词>\"\n   c. 搜到相关卡片 → 读一下，看有没有已有洞察能指导实现\n\
+      \   d. **backlink 扩展**：对每个命中的卡片跑 `MEMEX_HOME=. memex backlinks <slug>`，拉出关联卡片，读取最相关的 1-2 个（向量找入口，图谱做扩展）\n   e. 没搜到 →\
+      \ 继续，不纠结\n  f. **⚠️ 不能跳过这一步** — 写了 memex 就必须用，跳过 = 违反\"自己的工具必须用\"\n3. **学习维护者**（从wiki笔记读，不是现场查）：\n   a. wiki 笔记里应该已有维护者模式（reflect\
+      \ 时沉淀的）\n   b. 如果笔记里没有，说明这是第一次打这个repo——此时才去查最近 merged PR\n   c. 注意：他们怎么写测试？怎么处理边界？PR 描述什么格式？\n3. 读 CONTRIBUTING.md，**重点关注**：\n\
+      \  a. PR 流程要求（changeset？CLA？签名？）（教训：stagehand 没加 changeset 被关）\n   b. 代码风格/lint要求\n   c. 测试要求\n4. 涉及 RFC/标准规范的修改？→ 先读原始\
+      \ RFC 文档再写代码，不凭经验猜 API（教训：Acontext#509 RFC 5987 编码用错 API）\n5. 理解相关代码模块的结构\n5b. **方向存活检查**（check-before-invest，3次教训升级）：\n\
+      \  a. 这个 issue 涉及的模块/依赖/方向还在项目 roadmap 上吗？\n   b. `git log --oneline -10 --<相关目录>` 看最近是否有大规模重写或删除\n   c. issue 评论里有没有\
+      \ maintainer 说\"这个方向要废弃/重写\"？\n  d. 涉及第三方依赖？查是否有安全事件或被弃用的讨论\n   e. 如果方向已死 → 退回 find_work，不浪费时间（教训：DeepTutorlitellm 废弃白做\
+      \ PR）\n6. 确认 issue 的根因或需求\n7. **查近期修复**：`git log --oneline -20-- <相关文件>` 看有没有近期 commit 已经修了这个 issue\n   - 如果发现已修但 issue\
+      \ 未关闭，在 issue 下评论指出，然后退回find_work\n7. 确认没有人在做同一个 issue（检查 issue 下的关联 PR 和评论）\n8. 评估是否真的能在这个 repo 修（不是上游问题）\n\\\n   \
+      \   9. **提 PR 前 5 问**（全过才提）：\n   a. 这个 PR 只解决一个问题吗？\n   b. 上游没有已有修复或竞争 PR 吗？\n  c. 我读了 CONTRIBUTING.md 和最近的 merge 模式吗？\n\
+      \   d. 我能验证这个修复吗？\n   e. 这个 repo 我的open PR ≤ 3 吗？（超过就停，等已有 PR 被消化）\n汇报你的理解和实现计划，包含从笔记和维护者 PR 中学到的关键信息。\n"
     branches:
     - condition: issue 可做，计划明确
       next: plan
@@ -222,24 +230,32 @@ nodes:
     - condition: 发现问题，需要重选
       next: find_work
   plan_review:
-    task: "**Independent Plan Review Gate** — 不允许自评审，必须用 subagent 独立评审计划。\n（灵感来源：GenericAgent mandatory subagent review gate — 分离 planning 和 validation 角色。）\n\n**步骤：**\n1. 把 plan 阶段产出的计划（变更清单 + 实现方法 + 测试策略）整理为简洁文本\n\
-      2. spawn 一个 subagent（mode=run），给它以下指令：\n   ```\n   你是一个代码审查员。评审以下实现计划，给出 1-10 分并附简短理由。\n   评审维度：\n   - Scope 是否最小化？有没有不必要的额外改动？\n   - 是否在修根因而非绕症状？\n   - 测试策略是否覆盖了核心变更？\n   - 有没有明显的风险/遗漏？\n   - 是否符合\
-      \ maintainer 偏好（如果已知）？\n   \n   如果分数 < 7，指出具体问题。\n   如果分数 >= 7，回复 APPROVED。\n   ```\n3. subagent 只看到计划文本，不看 study/context — 这样强制独立判断\n4. **结果处理：**\n   - APPROVED (>=7) → 继续到 implement\n   - NOT APPROVED\
-      \ (<7) → 根据反馈修改计划，回 plan 重来\n\n**⚠️ 不允许跳过这一步。** 即使计划看起来很简单（一行修复除外——如果 plan 阶段已说明是 trivial fix，可以直接过）。\n自己觉得\"这个计划没问题不需要审\"= 你在自评审 = 违反规则。\n"
+    task: "**Independent Plan Review Gate** — 不允许自评审，必须用 subagent 独立评审计划。\n（灵感来源：GenericAgent mandatory subagent review gate\
+      \ — 分离 planning 和 validation 角色。）\n\n**步骤：**\n1. 把 plan 阶段产出的计划（变更清单 + 实现方法 + 测试策略）整理为简洁文本\n2. spawn 一个 subagent（mode=run），给它以下指令：\n\
+      \   ```\n   你是一个代码审查员。评审以下实现计划，给出 1-10 分并附简短理由。\n   评审维度：\n   - Scope 是否最小化？有没有不必要的额外改动？\n   - 是否在修根因而非绕症状？\n   - 测试策略是否覆盖了核心变更？\n\
+      \   - 有没有明显的风险/遗漏？\n   - 是否符合 maintainer 偏好（如果已知）？\n   \n   如果分数 < 7，指出具体问题。\n   如果分数 >= 7，回复 APPROVED。\n   ```\n3.\
+      \ subagent 只看到计划文本，不看 study/context — 这样强制独立判断\n4. **结果处理：**\n   - APPROVED (>=7) → 继续到 implement\n   - NOT APPROVED\
+      \ (<7) → 根据反馈修改计划，回 plan 重来\n\n**⚠️ 不允许跳过这一步。** 即使计划看起来很简单（一行修复除外——如果 plan 阶段已说明是 trivial fix，可以直接过）。\n自己觉得\"这个计划没问题不需要审\"\
+      = 你在自评审 = 违反规则。\n"
     branches:
     - condition: Subagent APPROVED (score >= 7)
       next: implement
     - condition: Subagent NOT APPROVED (score < 7)，需要修改计划
       next: plan
   implement:
-    task: "按照 plan 阶段的计划实现（参照变更清单逐项执行）：\n0. **分工决策**：\n   - 代码实现用 acpx exec 同步调 Claude Code：\n     `cd <repo> && /home/kagura/repo/openclaw/node_modules/.bin/acpx --approve-all claude exec \"task\"`\n \
-      \  - task 必须包含 Claude Code 看不到的上下文：\n     a. 相关的 issue 讨论和 reviewer 反馈\n     b. 类似 bug 的已有修复（可作为参考模式）\n     c. 项目架构和代码位置的关键信息\n     d. maintainer 偏好（从 wiki 读）\n   - **task 末尾必须加验证指令**：\n     \"Before\
-      \ committing: 1) grep for all test files that import/mock the interfaces you changed, update their mocks. 2) Run the project's test/lint commands. 3) git diff --stat to confirm no files were missed.\"\
-      \n   - 一行级别的简单修复可以自己做，不需要调 Claude Code\n   - **效率 tip**：大文件（1000+ 行）的简单修复（< 20 行改动），手动改比 acpx exec 更高效\n   - acpx exec 超时默认 300 秒，大文件可能不够，评估后决定手动还是调 agent\n1. acpx exec 是同步的 — 等它跑完结果直接在 stdout 里\n\
-      2. Claude Code 完成后：**机械验证**（不能跳过）：\n     运行 `bash ~/.openclaw/workspace/flowforge/scripts/verify-claims.sh <repo-dir> [expected-files...]`\n     expected-files = plan 阶段列出的变更文件。脚本检查：文件确实被修改（git diff）、没有遗留\
-      \ unstaged changes、修改文件非空、无 conflict markers。\n     脚本返回 FAILED → 回去修，不要继续\n3. Review commit 改动是否正确\n4. 确保代码风格符合项目规范\n5. **push 前自检**（不能跳过）：\n   a. `git diff --stat` 看全局影响\n   b. 改了接口/类型？→ grep 所有\
-      \ import 这个接口的文件，确认 mock/stub 同步了\n   c. 项目有测试命令？→ 跑。没有本地环境？→ 至少 grep 验证 mock 完整性\n\n**\U0001F6A9 Red Flags — 如果出现以下症状，你在赶工不是在实现：**\n- 跳过了 plan 里的某个变更项但没说原因 → 你忘了或在回避\n- push 前没跑测试就说\"应该没问题\" → 你在猜不是在验证\n\
-      - 改了接口但没 grep 相关 mock/stub 文件 → CI 会告诉你\n- acpx exec 的 task 里没包含上下文（issue 讨论/维护者偏好）→ Claude Code 会猜着做\n汇报实现结果和测试状态。\n"
+    task: "按照 plan 阶段的计划实现（参照变更清单逐项执行）：\n0. **分工决策**：\n   - 代码实现用 acpx exec 同步调 Claude Code：\n     `cd <repo> && /home/kagura/repo/openclaw/node_modules/.bin/acpx\
+      \ --approve-all claude exec \"task\"`\n   - task 必须包含 Claude Code 看不到的上下文：\n     a. 相关的 issue 讨论和 reviewer 反馈\n    \
+      \ b. 类似 bug 的已有修复（可作为参考模式）\n     c. 项目架构和代码位置的关键信息\n     d. maintainer 偏好（从 wiki 读）\n   - **task 末尾必须加验证指令**：\n    \
+      \ \"Before committing: 1) grep for all test files that import/mock the interfaces you changed, update their mocks. 2)\
+      \ Run the project's test/lint commands. 3) git diff --stat to confirm no files were missed.\"\n   - 一行级别的简单修复可以自己做，不需要调\
+      \ Claude Code\n   - **效率 tip**：大文件（1000+ 行）的简单修复（< 20 行改动），手动改比 acpx exec 更高效\n   - acpx exec 超时默认 300 秒，大文件可能不够，评估后决定手动还是调\
+      \ agent\n1. acpx exec 是同步的 — 等它跑完结果直接在 stdout 里\n2. Claude Code 完成后：**机械验证**（不能跳过）：\n     运行 `bash ~/.openclaw/workspace/flowforge/scripts/verify-claims.sh\
+      \ <repo-dir> [expected-files...]`\n     expected-files = plan 阶段列出的变更文件。脚本检查：文件确实被修改（git diff）、没有遗留 unstaged changes、修改文件非空、无\
+      \ conflict markers。\n     脚本返回 FAILED → 回去修，不要继续\n3. Review commit 改动是否正确\n4. 确保代码风格符合项目规范\n5. **push 前自检**（不能跳过）：\n\
+      \   a. `git diff --stat` 看全局影响\n   b. 改了接口/类型？→ grep 所有 import 这个接口的文件，确认 mock/stub 同步了\n   c. 项目有测试命令？→ 跑。没有本地环境？→\
+      \ 至少 grep 验证 mock 完整性\n\n**\U0001F6A9 Red Flags — 如果出现以下症状，你在赶工不是在实现：**\n- 跳过了 plan 里的某个变更项但没说原因 → 你忘了或在回避\n- push 前没跑测试就说\"\
+      应该没问题\" → 你在猜不是在验证\n- 改了接口但没 grep 相关 mock/stub 文件 → CI 会告诉你\n- acpx exec 的 task 里没包含上下文（issue 讨论/维护者偏好）→ Claude Code\
+      \ 会猜着做\n汇报实现结果和测试状态。\n"
     next: pre_push_audit
   pre_push_audit:
     task: '**Default-FAIL 验证关卡** — 证据必须以文件形式存在，不接受口头声称。
@@ -314,9 +330,31 @@ nodes:
       plan 阶段列了 N 个变更项，逐项打勾 ✅ 或说明为什么跳过。
 
 
+
+
+      **Step 4: Fresh-Context Review**（灵感来源：cwc Fresh-context evaluator）
+
+
+      Builder 不应给自己的代码打分。用独立 agent 从干净上下文审查 diff：
+
+
+      ```bash
+
+      bash ~/.openclaw/workspace/flowforge/scripts/fresh-context-review.sh <repo-dir> <base-ref>
+
+      ```
+
+
+      - PASS → 继续
+
+      - NEEDS_WORK → 读 findings，判断是否需要修（HIGH 必须修，MEDIUM 判断，LOW 可记录不修）
+
+      - 修完后重新跑 review 直到 PASS
+
+
       **判定规则：**
 
-      - gate verify 返回 ALL PASSED + plan 对照完整 → 通过
+      - gate verify 返回 ALL PASSED + fresh-context review PASS + plan 对照完整 → 通过
 
       - gate verify 返回 BLOCKED → 不通过，回 implement 补证据
 
@@ -361,17 +399,24 @@ nodes:
     - condition: 有问题需要修改
       next: implement
   reflect:
-    task: "反思本轮打工并**更新项目笔记**（不能跳过）：\n\n⛔ **Anti-rationalization table:**\n| 借口 | 反驳 |\n| \"PR 很顺利，没什么好反思的\" | 顺利≠没改进空间。有没有更快路径？选题有效吗？ |\n| \"这 repo 打过了，笔记不用更\" | 每次 PR 有新信号（review 风格、CI、竞争 PR）。3 行够 |\n\
-      | \"被关/被 supersede 了，不想看\" | 失败 PR 反思价值 > 成功 PR。写 why 和 prevention |\n| \"太累了先交了再说\" | 反思是这轮 30% 价值。跳过 = 白做 |\n\n**第一步：更新wiki 笔记**（必须做）\n编辑 ~/.openclaw/workspace/wiki/projects/<项目名>.md，追加：\n- 这次 PR\
-      \ 的结果（merged/pending/closed + 原因）\n- 维护者的 review 风格和偏好（新发现的）\n- **维护者 PR 模式**：他们怎么写测试、处理边界、描述 PR？（下次 study 要读这些）\n- CI/lint/测试的注意事项\n- 踩过的坑\n- 下次打这个 repo 该注意什么\n然后：cd ~/.openclaw/workspace/wiki &&\
-      \ git add -A && git commit -m \"update: <项目名> wiki notes\" && git push\n\n**第二步：Acontext distillation 反思**\n\n**成功分析**（什么有效）：\n- goal: 这轮要做什么？\n- approach: 什么方法有效？\n- key_decisions: 哪些选择起了作用？\n- pattern:\
-      \ 可复用的模式（选题策略、代码方法、沟通方式）\n- applies_when: 具体适用条件（哪个项目、什么类型的 issue）\n\n**失败分析**（哪里卡了）：\n- failure_point: 卡在哪？\n- flawed_reasoning: 错误假设\n- what_should_have_been_done: 正确做法\n- prevention_principle:\
-      \ 怎么防\n\n**沉淀分流**（按性质选最佳载体，所有笔记用 [[双链]] 互引）：\n- **项目级 pattern**（跟具体 repo/maintainer/CI 相关）→ wiki/projects/项目名.md\n  用 [[双链]] 引用相关项目笔记和概念卡片\n  例：NemoClaw CI 慢要先本地 lint、gitclaw maintainer 偏好小 PR\n-\
-      \ **跨项目洞察**（多个项目对比出的规律、生态观察）→ memex 卡片\n  写完后：cd ~/.openclaw/workspace/wiki && git add -A && git commit -m \"card: 卡片名\" && git push\n  例：TypeScript 项目普遍用 X 测试框架、大 repo 的 review 流程有 Y 共性\n- **行为级\
-      \ pattern**（跨项目通用的工作方式）→ beliefs-candidates.md（梯度收集，积累够了分流到 DNA/Workflow/KB）\n  例：选 issue 前查竞争 PR、被 review 先理解再改\n不确定的先放 wiki，重复出现再考虑升级。\n\n**工具检查**：\n- gogetajob、gh、flowforge 等有没有问题？\n- 有 bug → 去工具\
-      \ repo 提 issue 或自己修\n\n把反思结果记到 memory/YYYY-MM-DD.md。\n\n**第三步：更新贡献准则和工作流**（飞轮闭环）\n回顾 ~/.openclaw/workspace/wiki/github-contribution/guide.md：\n- 这轮贡献有没有新的选题认知？（比如某类项目 merge rate 特别低）\n- 发现了新的有效渠道？\n\
-      - \"服务到底\"或\"持续扩张\"有边界情况需要细化？\n如果有 → 更新 guide.md\n再回顾 workloop.yaml 本身：流程有没有卡的地方、多余的步骤、缺失的检查？\n如果有 → 更新 wiki/github-contribution/workloop.yaml\n更新后 git commit + push。\n\n**第四步：更新 TODO**（改进点进入待办）\n\
-      读 TODO.md「\U0001F528 GitHub Contribution（精进）」section：\n- 本轮发现工具/流程/策略改进点？→ 加入 TODO\n- 之前的待办已经顺手做完了？→ 删掉\n只放体系改进，不放 PR 状态。\n"
+    task: "反思本轮打工并**更新项目笔记**（不能跳过）：\n\n⛔ **Anti-rationalization table:**\n| 借口 | 反驳 |\n| \"PR 很顺利，没什么好反思的\" | 顺利≠没改进空间。有没有更快路径？选题有效吗？\
+      \ |\n| \"这 repo 打过了，笔记不用更\" | 每次 PR 有新信号（review 风格、CI、竞争 PR）。3 行够 |\n| \"被关/被 supersede 了，不想看\" | 失败 PR 反思价值 > 成功 PR。写\
+      \ why 和 prevention |\n| \"太累了先交了再说\" | 反思是这轮 30% 价值。跳过 = 白做 |\n\n**第一步：更新wiki 笔记**（必须做）\n编辑 ~/.openclaw/workspace/wiki/projects/<项目名>.md，追加：\n\
+      - 这次 PR 的结果（merged/pending/closed + 原因）\n- 维护者的 review 风格和偏好（新发现的）\n- **维护者 PR 模式**：他们怎么写测试、处理边界、描述 PR？（下次 study 要读这些）\n\
+      - CI/lint/测试的注意事项\n- 踩过的坑\n- 下次打这个 repo 该注意什么\n然后：cd ~/.openclaw/workspace/wiki && git add -A && git commit -m \"update:\
+      \ <项目名> wiki notes\" && git push\n\n**第二步：Acontext distillation 反思**\n\n**成功分析**（什么有效）：\n- goal: 这轮要做什么？\n- approach:\
+      \ 什么方法有效？\n- key_decisions: 哪些选择起了作用？\n- pattern: 可复用的模式（选题策略、代码方法、沟通方式）\n- applies_when: 具体适用条件（哪个项目、什么类型的 issue）\n\
+      \n**失败分析**（哪里卡了）：\n- failure_point: 卡在哪？\n- flawed_reasoning: 错误假设\n- what_should_have_been_done: 正确做法\n- prevention_principle:\
+      \ 怎么防\n\n**沉淀分流**（按性质选最佳载体，所有笔记用 [[双链]] 互引）：\n- **项目级 pattern**（跟具体 repo/maintainer/CI 相关）→ wiki/projects/项目名.md\n \
+      \ 用 [[双链]] 引用相关项目笔记和概念卡片\n  例：NemoClaw CI 慢要先本地 lint、gitclaw maintainer 偏好小 PR\n- **跨项目洞察**（多个项目对比出的规律、生态观察）→ memex\
+      \ 卡片\n  写完后：cd ~/.openclaw/workspace/wiki && git add -A && git commit -m \"card: 卡片名\" && git push\n  例：TypeScript 项目普遍用\
+      \ X 测试框架、大 repo 的 review 流程有 Y 共性\n- **行为级 pattern**（跨项目通用的工作方式）→ beliefs-candidates.md（梯度收集，积累够了分流到 DNA/Workflow/KB）\n\
+      \  例：选 issue 前查竞争 PR、被 review 先理解再改\n不确定的先放 wiki，重复出现再考虑升级。\n\n**工具检查**：\n- gogetajob、gh、flowforge 等有没有问题？\n- 有 bug\
+      \ → 去工具 repo 提 issue 或自己修\n\n把反思结果记到 memory/YYYY-MM-DD.md。\n\n**第三步：更新贡献准则和工作流**（飞轮闭环）\n回顾 ~/.openclaw/workspace/wiki/github-contribution/guide.md：\n\
+      - 这轮贡献有没有新的选题认知？（比如某类项目 merge rate 特别低）\n- 发现了新的有效渠道？\n- \"服务到底\"或\"持续扩张\"有边界情况需要细化？\n如果有 → 更新 guide.md\n再回顾 workloop.yaml\
+      \ 本身：流程有没有卡的地方、多余的步骤、缺失的检查？\n如果有 → 更新 wiki/github-contribution/workloop.yaml\n更新后 git commit + push。\n\n**第四步：更新 TODO**（改进点进入待办）\n\
+      读 TODO.md「\U0001F528 GitHub Contribution（精进）」section：\n- 本轮发现工具/流程/策略改进点？→ 加入 TODO\n- 之前的待办已经顺手做完了？→ 删掉\n只放体系改进，不放 PR\
+      \ 状态。\n"
     next: done
   done:
     task: '这一轮工作完成。记录今天的工作到 memory 文件。
