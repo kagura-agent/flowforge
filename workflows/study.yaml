@@ -57,7 +57,7 @@ nodes:
     task: |
       侦察 agent 生态的动向：
       0. **先搜已有知识**（不可跳过）：
-         - `cd ~/.openclaw/workspace/wiki && MEMEX_HOME=. memex search "<本轮关键词>" --limit 5`
+         - `bash ~/.openclaw/workspace/wiki/search.sh "<本轮关键词>" --limit 5`（hybrid: semantic + keyword）
          - 搜到相关笔记就先读，避免重复研究已知项目
          ⛔ 借口"我已经知道这个项目了" → 知识衰减真实存在，上次的笔记可能有你忘了的细节
       1. 看 GitHub trending（AI/agent 相关）、HN、Twitter/X 上最近在讨论什么
@@ -89,7 +89,7 @@ nodes:
   quick_scout:
     task: |
       10 分钟快速扫描，不求深入，只求广度：
-      0. **先搜已有知识**：`cd ~/.openclaw/workspace/wiki && MEMEX_HOME=. memex search "agent trending" --limit 3`，跳过已有深度笔记的项目
+      0. **先搜已有知识**：`bash ~/.openclaw/workspace/wiki/search.sh "agent trending" --limit 3`（hybrid search），跳过已有深度笔记的项目
       1. GitHub trending today（AI/agent 相关前 10）— 记项目名 + stars + 一句话
          **优先用 GitHub API search**（sort=stars, 按周过滤）比 web scrape 更稳定
       2. HN front page 扫一眼 — 有没有 agent 相关的讨论
@@ -106,7 +106,7 @@ nodes:
   apply:
     task: |
       把之前学到的东西应用到自己身上：
-      0. **先搜已有知识**：`cd ~/.openclaw/workspace/wiki && MEMEX_HOME=. memex search "<应用方向>" --limit 5`，找出相关卡片和笔记作为输入
+      0. **先搜已有知识**：`bash ~/.openclaw/workspace/wiki/search.sh "<应用方向>" --limit 5`（hybrid search: semantic + keyword, mitigates RAG failure modes），找出相关卡片和笔记作为输入
       1. 读 IDEAS.md 和最近的 memory，找出"学到了但没用上"的洞察
       2. 选一个最值得应用的，具体执行：
          - 改工具代码（gogetajob、FlowForge、nudge）
@@ -129,7 +129,7 @@ nodes:
       0. **先看组合健康**：`bash ~/.openclaw/workspace/study/tracking-health.sh` — 如果 auto-drop candidates > 5 或总量 > 40，先清理再跟进
       0a. **再查到期项目**：`bash ~/.openclaw/workspace/study/tracking-due.sh` 看哪些 tracking item 到了 revisit 日期
       0b. **社区健康检查**：对要深入跟进的项目跑 `bash ~/.openclaw/workspace/study/tracking-community.sh <owner/repo>` — 看 issue 活跃度、外部 PR、贡献者多样性。用结果辅助判断是否值得继续跟踪（🔴 SOLO + 低星 → 考虑 drop）
-      0c. **先搜已有知识**：对要跟进的项目 `cd ~/.openclaw/workspace/wiki && MEMEX_HOME=. memex search "<项目名>" --limit 5`，带着上次认知进入
+      0c. **先搜已有知识**：对要跟进的项目 `bash ~/.openclaw/workspace/wiki/search.sh "<项目名>" --limit 5`（hybrid search），带着上次认知进入
       1. 优先跟进到期的 tracking items，其次读 wiki/projects/ 找活跃项目
       2. 选 2-3 个，检查最近变化：
          - 大的 PR 被 merge（架构重构、新 feature）
@@ -149,9 +149,8 @@ nodes:
       0. **先读已有知识**（⚠️ 不可跳过，即使觉得已经知道）：
          ⛔ 借口"这个项目我刚看过" → 刚看过 ≠ 记得细节。30秒扫一眼不会浪费时间，但跳过可能重复研究
          - wiki/projects/项目名.md（如果有，带着上次的认知进入）
-         - `grep -rl "关键词" ~/.openclaw/workspace/wiki/` 搜全库（cards + projects 都搜）
-         - `cd ~/.openclaw/workspace/wiki && MEMEX_HOME=. memex search "<关键词>" --limit 5` 语义搜索
-         - **backlink 扩展**：对命中的卡片跑 `MEMEX_HOME=. memex backlinks <slug>`，沿链接读 1-2 个关联卡片
+         - `bash ~/.openclaw/workspace/wiki/search.sh "<关键词>" --limit 5`（hybrid: semantic + keyword，覆盖 RAG 失效场景）
+         - **backlink 扩展**：对命中的卡片跑 `cd ~/.openclaw/workspace/wiki && MEMEX_HOME=. memex backlinks <slug>`，沿链接读 1-2 个关联卡片
          - 找到相关笔记和卡片就先读，带着已有认知进入
       1. 如果是新项目：clone，读 README、架构文档、核心模块
       2. 如果是已关注项目：读新变化的代码，理解设计决策
