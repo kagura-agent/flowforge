@@ -107,7 +107,7 @@ nodes:
     task: |
       把之前学到的东西应用到自己身上：
       0. **先搜已有知识**：`bash ~/.openclaw/workspace/wiki/search.sh "<应用方向>" --limit 5`（hybrid search: semantic + keyword, mitigates RAG failure modes），找出相关卡片和笔记作为输入
-      1. 读 IDEAS.md 和最近的 memory，找出"学到了但没用上"的洞察
+      1. **先读 unapplied.md**：`cat ~/.openclaw/workspace/study/unapplied.md`——聚合的待应用洞察列表。再读 IDEAS.md 和最近的 memory 补充
       2. 选一个最值得应用的，具体执行：
          - 改工具代码（gogetajob、FlowForge、nudge）
          - 改工作流（study.yaml、workloop.yaml、reflect.yaml）
