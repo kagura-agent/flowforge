@@ -41,6 +41,9 @@ nodes:
       - 同一天 apply ≥ 3 次 → **禁止再选应用**。只能选侦察或跟进。
         检查方法：`grep -c "^## Study Apply\|^## Study.*Apply" ~/.openclaw/workspace/memory/$(date +%Y-%m-%d).md`
         ≥ 3 → 锁定。原理：apply 收益递减明显——前 2 次通常有实质改动，第 3 次开始找「能应用的东西」本身就是强迫行为。
+      - 同一天 scout（侦察 + 快速扫描合计）≥ 3 次 → **禁止再选侦察或快速扫描**。只能选应用或跟进。
+        检查方法：`grep -c "Scout\|scout\|quick_scout\|Quick Scan" ~/.openclaw/workspace/memory/$(date +%Y-%m-%d).md`
+        ≥ 3 → 锁定。原理：同日多次侦察覆盖同一批新项目，收益接近零。
       - **周末降级**（周六日）：followup 低信号（多数项目周末不活跃），优先选 apply 或 scout。
         如果选 followup，只做到期项目，不扩展。
     branches:

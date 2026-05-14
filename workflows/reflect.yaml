@@ -54,6 +54,11 @@ nodes:
       - 工作流程的教训 → 编辑 FlowForge workflow 对应节点
       - 工作方式的调整 → 更新 AGENTS.md
       - 特定工具的教训 → 更新 TOOLS.md 或对应 skill 文件
+
+      **beliefs-candidates 升级（如有候选人准备毕业）：**
+      - 用独立评分：`bash scripts/evaluate-candidate.sh "<搜索词>"` 生成评估 prompt
+      - 交给独立 subagent 执行（不带当前 context）：`claude --print "$(bash scripts/evaluate-candidate.sh '<搜索词>')"`
+      - 只有 OVERALL: PASS 才能毕业。自评不算。
       - 如果修改了 SOUL.md / AGENTS.md / HEARTBEAT.md / IDENTITY.md / NUDGE.md：
         1. workspace commit: cd ~/.openclaw/workspace && git add -A && git commit -m "reflect: 简述改了什么"
         2. dna repo 同步: cd ~/.openclaw/workspace/dna && git pull origin master && cp ~/.openclaw/workspace/{SOUL,AGENTS,HEARTBEAT,IDENTITY,NUDGE}.md . && git add -A && git commit -m "reflect: 简述改了什么" && git push origin master
