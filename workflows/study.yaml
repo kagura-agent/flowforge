@@ -44,8 +44,13 @@ nodes:
       - 同一天 scout（侦察 + 快速扫描合计）≥ 3 次 → **禁止再选侦察或快速扫描**。只能选应用或跟进。
         检查方法：`grep -c "Scout\|scout\|quick_scout\|Quick Scan" ~/.openclaw/workspace/memory/$(date +%Y-%m-%d).md`
         ≥ 3 → 锁定。原理：同日多次侦察覆盖同一批新项目，收益接近零。
+      - 同一天 followup ≥ 4 次 → **禁止再选跟进**。只能选侦察、快速扫描或应用。
+        检查方法：`grep -c "^## Study Followup\|^## Study.*Followup\|^## Study.*Follow" ~/.openclaw/workspace/memory/$(date +%Y-%m-%d).md`
+        ≥ 4 → 锁定。原理：同日对同一 portfolio 反复检查，第 4 次起边际收益接近零（05-14 实证：24 次 study 中 7+ 次 followup，后期全部无新信号）。
       - **周末降级**（周六日）：followup 低信号（多数项目周末不活跃），优先选 apply 或 scout。
         如果选 followup，只做到期项目，不扩展。
+      - **全部锁定**：scout ≥3 AND apply ≥3 AND followup ≥4 → **本轮直接结束**。不强迫进入任何模式。
+        记录到 memory：「Study 全模式饱和，跳过」。
     branches:
       - condition: "侦察新东西"
         next: scout
