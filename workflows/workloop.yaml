@@ -157,7 +157,7 @@ nodes:
     - condition: 没找到合适的新项目
       next: reflect
   study:
-    task: "深入研究选中的项目和 issue：\n1. **必须先读笔记**（不能跳过）：\n   a. cat ~/.openclaw/workspace/wiki/projects/<项目名>.md— wiki 笔记\n   b.\
+    task: "深入研究选中的项目和 issue：\n0. **熟悉度陷阱检查**（打过 3+ 次的 repo 必做）：越熟悉越容易跳步骤，机械执行每步，不因"上次做过"跳过（教训：NemoClaw DCO 3 次同错）\n1. **必须先读笔记**（不能跳过）：\n   a. cat ~/.openclaw/workspace/wiki/projects/<项目名>.md— wiki 笔记\n   b.\
       \ 如果文件不存在，说明这是第一次打这个 repo，要特别小心\n1b. **验证本地测试环境**（第一次打新 repo时必做，之后跳过）：\n   a. 这个 repo 用什么语言？Go/Python/TS/Java/Rust？\n\
       \   b. 本地有对应的运行时吗？`goversion` / `python --version` / `node --version`\n   c. 能装依赖吗？`go mod download`/ `pip install -e\
       \ \".[dev]\"` / `npm install`\n   d. 能跑测试吗？找到测试命令（Makefile/pyproject.toml/package.json）跑一遍\n  e. **如果环境配不通 → 记到wiki\
