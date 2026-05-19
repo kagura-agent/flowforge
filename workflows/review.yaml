@@ -39,6 +39,30 @@ nodes:
       ⚠️ 计数纪律：所有数字必须附原始命令和输出。不可验证的标 [未验证]，不编来源不明的累计值。
     branches:
       - condition: "完成"
+        next: beliefs_graduation
+
+  beliefs_graduation:
+    task: |
+      **Beliefs Graduation Gate — 扫描并执行升级**
+      
+      1. 扫描 beliefs-candidates.md，找出所有 count ≥ 3 或标记为 "repeated" 的候选
+         ```bash
+         grep -n "count.*[3-9]\|repeated\|3x\|V1.*pass" ~/.openclaw/workspace/beliefs-candidates.md
+         ```
+      2. 对每个候选，运行独立评估：
+         ```bash
+         bash ~/.openclaw/workspace/self-evolving-agent/scripts/evaluate-candidate.sh "<关键词>" | claude --print --permission-mode bypassPermissions
+         ```
+      3. 评估结果 PASS → 执行升级：
+         a. 在 beliefs-candidates.md 中标记 `→ **graduated YYYY-MM-DD** (target: <DNA|Workflow|KB> — <具体位置>)`
+         b. 将内容写入目标位置（AGENTS.md / workloop.yaml / wiki/）
+         c. git commit
+      4. 评估结果 FAIL → 记录理由，不升级
+      5. 没有候选 → 报告 "0 candidates at graduation threshold"
+      
+      ⚠️ 必须用独立 subagent 评估，不能自评。
+    branches:
+      - condition: "完成"
         next: memory_hygiene
 
   memory_hygiene:
