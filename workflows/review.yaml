@@ -85,6 +85,12 @@ nodes:
          - Score 60-79 的：标注 status: stale，下次 review 再看
          - 不是每次都要清理——但要看数据，不要凭感觉
 
+      5. **Wiki 重复检测**（每周一次，退役扫描后做）：
+         - 运行 `bash ~/.openclaw/workspace/wiki/scripts/overlap-detector.sh --threshold 0.45 --top 10`
+         - Jaccard ≥0.5 的：确认是否真重复，merge 或 supersede（保留更新/更完整的）
+         - 0.35-0.5 的：检查是否需要 cross-link（[[wikilink]]互相引用）
+         - 目的：减少冗余，让检索更精准（同一话题散落多处 = 检索噪音）
+
       ⚠️ 编辑文件时：先 read 获取精确内容，再 edit。不要凭记忆猜 oldText。
       每次改动都 git diff --stat 确认，不要误删有价值的信息。
       不设硬行数上限——质量好就留，冗余了就清。
