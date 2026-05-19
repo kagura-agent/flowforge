@@ -79,10 +79,16 @@ nodes:
          - 项目的技术细节（功能列表、PR 历史）→ wiki/projects/
          - MEMORY.md 只留索引级描述
 
+      4. **Wiki 退役扫描**（每周一次，周一 review 时做）：
+         - 运行 `bash ~/.openclaw/workspace/wiki/scripts/retire-candidates.sh --threshold 70 --top 10`
+         - Score ≥80 的强退役候选人：检查内容，确认无价值后 archive 或 delete
+         - Score 60-79 的：标注 status: stale，下次 review 再看
+         - 不是每次都要清理——但要看数据，不要凭感觉
+
       ⚠️ 编辑文件时：先 read 获取精确内容，再 edit。不要凭记忆猜 oldText。
-      每次改动都 git diff 确认，不要误删有价值的信息。
+      每次改动都 git diff --stat 确认，不要误删有价值的信息。
       不设硬行数上限——质量好就留，冗余了就清。
-      汇报：清理了什么、删了多少行、现在多少行。
+      汇报：清理了什么、删了多少行（用 git diff --stat 验证，不要手算）、现在多少行。
     branches:
       - condition: "完成"
         next: write_log
