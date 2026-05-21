@@ -153,11 +153,11 @@ nodes:
       ⚠️ **数据新鲜度纪律**：所有 Eval 数据必须当轮重新查询。禁止沿用旧数据标 [已验证]。
       如果因 token/时间限制无法重新查询，必须标 [未验证/沿用 MM-DD 数据]，不得标 [已验证]。
       - PR merge rate: X% (N merged / M total) — 来源: gogetajob stats [已验证] — ⚠️ 必须当轮跑 `gogetajob stats`
-      - beliefs-candidates total: N 条 — ⚠️ 必须用 awk 分段计数，禁止整文件 grep -c：
+      - beliefs-candidates total: N 条 — ⚠️ 必须用以下命令精确计数所有 active entries（排除 graduated/retracted）：
         ```bash
-        awk '/^## /{section=$0} /^- [0-9]{4}-/{count[section]++; total++} END{for(s in count) print s, count[s]; print "TOTAL:", total}' beliefs-candidates.md
+        awk '/graduated [0-9]{4}|retracted [0-9]{4}/ {next} /^## 2026-|^### .*2026-|^- 2026-|^- \*\*2026-/ {total++} END{print "ACTIVE:", total}' beliefs-candidates.md
         ```
-        报告格式：「N 条（§SectionA X 条 + §SectionB Y 条 + ...）」
+        这条命令覆盖四种条目格式（## section / ### subsection / - inline / - **bold**），并排除已毕业/撤回条目。
       - wiki: cards N / projects N — ⚠️ 必须当场跑 `ls | wc -l`，不沿用旧数据：
         ```bash
         echo "cards: $(ls ~/.openclaw/workspace/wiki/cards/ | wc -l), projects: $(ls ~/.openclaw/workspace/wiki/projects/ | wc -l)"
