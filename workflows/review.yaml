@@ -7,6 +7,12 @@ nodes:
     task: |
       工具进化 Review（diff-scoped，只深入检查变更项）。
       
+      **第〇步：运行工具自测**
+      ```bash
+      bash ~/.openclaw/workspace/tools/tool-selftest.sh
+      ```
+      如果有失败 → 当场修复（或记 TODO）。全绿 → 继续。
+
       **第一步：运行 diff pre-check**
       ```bash
       bash ~/.openclaw/workspace/tools/review-diff-check.sh 24
