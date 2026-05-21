@@ -157,7 +157,7 @@ nodes:
     - condition: 没找到合适的新项目
       next: reflect
   study:
-    task: "深入研究选中的项目和 issue：\n0. **熟悉度陷阱检查**（打过 3+ 次的 repo 必做）：越熟悉越容易跳步骤，机械执行每步，不因"上次做过"跳过（教训：NemoClaw DCO 3 次同错）\n1. **必须先读笔记**（不能跳过）：\n   a. cat ~/.openclaw/workspace/wiki/projects/<项目名>.md— wiki 笔记\n   b.\
+    task: "深入研究选中的项目和 issue：\n0. **熟悉度陷阱检查**（打过 3+ 次的 repo 必做）：越熟悉越容易跳步骤，机械执行每步，不因\"上次做过\"跳过（教训：NemoClaw DCO 3 次同错）\n1. **必须先读笔记**（不能跳过）：\n   a. cat ~/.openclaw/workspace/wiki/projects/<项目名>.md— wiki 笔记\n   b.\
       \ 如果文件不存在，说明这是第一次打这个 repo，要特别小心\n1b. **验证本地测试环境**（第一次打新 repo时必做，之后跳过）：\n   a. 这个 repo 用什么语言？Go/Python/TS/Java/Rust？\n\
       \   b. 本地有对应的运行时吗？`goversion` / `python --version` / `node --version`\n   c. 能装依赖吗？`go mod download`/ `pip install -e\
       \ \".[dev]\"` / `npm install`\n   d. 能跑测试吗？找到测试命令（Makefile/pyproject.toml/package.json）跑一遍\n  e. **如果环境配不通 → 记到wiki\
@@ -411,17 +411,50 @@ nodes:
       \ 用 [[双链]] 引用相关项目笔记和概念卡片\n  例：NemoClaw CI 慢要先本地 lint、gitclaw maintainer 偏好小 PR\n- **跨项目洞察**（多个项目对比出的规律、生态观察）→ memex\
       \ 卡片\n  写完后：cd ~/.openclaw/workspace/wiki && git add -A && git commit -m \"card: 卡片名\" && git push\n  例：TypeScript 项目普遍用\
       \ X 测试框架、大 repo 的 review 流程有 Y 共性\n- **行为级 pattern**（跨项目通用的工作方式）→ beliefs-candidates.md（梯度收集，积累够了分流到 DNA/Workflow/KB）\n\
-      \  例：选 issue 前查竞争 PR、被 review 先理解再改\n不确定的先放 wiki，重复出现再考虑升级。\n\n**工具检查**：\n- gogetajob、gh、flowforge 等有没有问题？\n- 有 bug\
+      \  例：选 issue 前查竞争 PR、被 review 先理解再改\n不确定的先放 wiki，重复出现再考虑升级。\n\n**第 2.5 步：强制写 gradient**（不能跳过）\n⚠️ 每轮打工必须至少写 1 条 gradient 到 beliefs-candidates.md，哪怕很短。\n这不是可选的反思——是管线的输入源。没有输入，beliefs 管线永远空转。\n\n问自己：\n- 这轮哪里卡了？→ 写下来\n- 什么方法有效？→ 写下来\n- 维护者的反馈教了我什么？→ 写下来\n- 选题/工具/流程有什么可以改进？→ 写下来\n\n格式（追加到 beliefs-candidates.md 末尾）：\n```\n## YYYY-MM-DD: <一句话标题>\n- **gradient**: <具体的行为级教训>\n- **count**: 1\n- **action**: <下次怎么做不同>\n```\n\n**⛔ 如果你觉得\"这轮没什么好写的\"——这本身就是一个 gradient：你在合理化跳过。写下来。**\n\n**工具检查**：\n- gogetajob、gh、flowforge 等有没有问题？\n- 有 bug\
       \ → 去工具 repo 提 issue 或自己修\n\n把反思结果记到 memory/YYYY-MM-DD.md。\n\n**第三步：更新贡献准则和工作流**（飞轮闭环）\n回顾 ~/.openclaw/workspace/wiki/github-contribution/guide.md：\n\
       - 这轮贡献有没有新的选题认知？（比如某类项目 merge rate 特别低）\n- 发现了新的有效渠道？\n- \"服务到底\"或\"持续扩张\"有边界情况需要细化？\n如果有 → 更新 guide.md\n再回顾 workloop.yaml\
       \ 本身：流程有没有卡的地方、多余的步骤、缺失的检查？\n如果有 → 更新 wiki/github-contribution/workloop.yaml\n更新后 git commit + push。\n\n**第四步：更新 TODO**（改进点进入待办）\n\
       读 TODO.md「\U0001F528 GitHub Contribution（精进）」section：\n- 本轮发现工具/流程/策略改进点？→ 加入 TODO\n- 之前的待办已经顺手做完了？→ 删掉\n只放体系改进，不放 PR\
       \ 状态。\n"
-    next: done
+    next: gradient_gate
+  gradient_gate:
+    task: |
+      **梯度提取验证门**（结构性强制，不可跳过）
+
+      检查 beliefs-candidates.md 在本轮是否被修改：
+      ```
+      git -C ~/.openclaw/workspace diff HEAD -- beliefs-candidates.md | head -20
+      ```
+
+      如果有 diff（新增了 gradient 条目）→ 通过，继续。
+      如果没有 diff → **你跳过了 reflect 里的梯度提取步骤。现在补写。**
+
+      补写方法（至少 1 条，追加到 beliefs-candidates.md 末尾）：
+      ```
+      ## YYYY-MM-DD: <一句话标题>
+      - **gradient**: <这轮具体的行为级教训>
+      - **count**: 1
+      - **action**: <下次怎么做不同>
+      ```
+
+      问自己（按优先级）：
+      1. 这轮哪里卡了？什么假设是错的？
+      2. 什么方法有效？可以复用吗？
+      3. 选题/工具/沟通有什么改进空间？
+      4. 真的什么都没学到？那"为什么没学到"本身就是一个 gradient。
+
+      写完后 commit：
+      ```
+      cd ~/.openclaw/workspace && git add beliefs-candidates.md && git commit -m "gradient: <标题>"
+      ```
+    branches:
+      - condition: beliefs-candidates.md 已有本轮新增的 gradient
+        next: done
+      - condition: 补写完成
+        next: done
   done:
-    task: '这一轮工作完成。记录今天的工作到 memory 文件。
-
+    task: |
+      这一轮工作完成。记录今天的工作到 memory 文件。
       汇报本轮成果。
-
-      '
     terminal: true
