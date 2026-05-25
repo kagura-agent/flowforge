@@ -48,12 +48,33 @@ nodes:
       **记录事实：**
       - 更新 memory/YYYY-MM-DD.md，记录发生了什么
 
-      **防止重复犯错 / 自我演化：**
-      - 行为层面的教训 → 更新 SOUL.md 的 Beliefs
-      - 工作习惯的调整 → 更新 HEARTBEAT.md 或 NUDGE.md
+      **强制写 gradient**（不能跳过）：
+      ⚠️ 每轮反思必须至少写 1 条 gradient 到 beliefs-candidates.md。
+      反思是管线最重要的输入源——没有输入，beliefs 管线永远空转。
+
+      问自己：
+      - 回顾中发现了什么重复犯的错误？→ 写下来
+      - 什么认知/习惯需要调整？→ 写下来
+      - 遗漏的火花或承诺差距教了什么？→ 写下来
+      - 真的什么都没学到？那"为什么没学到"本身就是一个 gradient。
+
+      **使用 add-gradient.sh 写入**（统一入口，自动去重 + JSONL 日志）：
+      ```
+      bash ~/.openclaw/workspace/tools/add-gradient.sh \
+        --gradient '<具体的行为级教训>' \
+        --pattern '<pattern-name>' \
+        --source reflect \
+        --trigger '<什么时候会触发这个问题>' \
+        --fix '<下次怎么做不同>'
+      ```
+
+      **防止重复犯错 / 自我演化（gradient 之外的载体）：**
       - 工作流程的教训 → 编辑 FlowForge workflow 对应节点
-      - 工作方式的调整 → 更新 AGENTS.md
       - 特定工具的教训 → 更新 TOOLS.md 或对应 skill 文件
+      - 项目级 pattern → wiki/projects/ 笔记
+      - 跨项目洞察 → memex 卡片
+      注：行为层面的教训走 gradient（beliefs-candidates.md），不直接改 SOUL.md/AGENTS.md。
+      只有通过 Triple Verification 毕业的 gradient 才升级到 DNA。
 
       **beliefs-candidates 升级（如有候选人准备毕业）：**
       - 用独立评分：`bash scripts/evaluate-candidate.sh "<搜索词>"` 生成评估 prompt
@@ -69,6 +90,43 @@ nodes:
 
       **最后：**
       - 告诉 Luna 你做了什么、学到了什么（简洁，不要流水账）
+    next: gradient_gate
+
+  gradient_gate:
+    task: |
+      **梯度提取验证门**（结构性强制，不可跳过）
+
+      检查 beliefs-candidates.md 在本轮是否被修改：
+      ```
+      git -C ~/.openclaw/workspace diff HEAD -- beliefs-candidates.md | head -20
+      ```
+
+      如果有 diff（新增了 gradient 条目）→ 通过，继续。
+      如果没有 diff → **你跳过了 act 里的梯度提取步骤。现在补写。**
+
+      使用 add-gradient.sh 写入：
+      ```
+      bash ~/.openclaw/workspace/tools/add-gradient.sh \
+        --gradient "具体的行为级教训" \
+        --pattern "pattern-name" \
+        --source reflect \
+        --trigger "什么时候会触发这个问题" \
+        --fix "下次怎么做不同"
+      ```
+
+      写完后 commit：
+      ```
+      cd ~/.openclaw/workspace && git add beliefs-candidates.md && git commit -m "gradient: <标题>"
+      ```
+    branches:
+      - condition: "beliefs-candidates.md 已有本轮新增的 gradient"
+        next: done
+      - condition: "补写完成"
+        next: done
+
+  done:
+    task: |
+      反思完成。回复结果摘要。
     terminal: true
 
   silent:
