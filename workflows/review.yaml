@@ -68,29 +68,28 @@ nodes:
     task: |
       **Beliefs Graduation Gate — 扫描并执行升级**
       
-      0. **先跑 gradient-scan**，检查 memory 中有没有已有 candidate 的新证据（自动 count increment）：
+      0. **跑 graduation-pipeline**（skill-to-skill: gradient-scan → evaluate-candidate 自动桥接）：
          ```bash
-         bash ~/.openclaw/workspace/tools/gradient-scan.sh --days 7
+         bash ~/.openclaw/workspace/tools/graduation-pipeline.sh --days 14 --threshold 6
          ```
-         如果有 pattern 命中，去 beliefs-candidates.md 更新对应 count 和日期。
-         灵感来源：Elephant Agent PR#43 Signal Extraction（从历史 episode 自动提取信号）
+         Pipeline 自动：扫描 memory 找证据 → 筛选 V1 通过的 → 展示候选 + context。
+         然后对每个 V1 PASS 的候选手动评估 V2(预测力) + V3(非显而易见)。
 
-      1. 扫描 beliefs-candidates.md，找出所有 count ≥ 3 或标记为 "repeated" 的候选
+      1. 补充：检查 beliefs-candidates.md 中显式标记 "count ≥ 3" 或 "repeated" 的（pipeline 可能漏掉 keyword 定义不完整的）：
          ```bash
          grep -n "count.*[3-9]\|repeated\|3x\|V1.*pass" ~/.openclaw/workspace/beliefs-candidates.md
          ```
-      2. 对每个候选，运行独立评估：
-         ```bash
-         bash ~/.openclaw/workspace/self-evolving-agent/scripts/evaluate-candidate.sh "<关键词>" | claude --print --permission-mode bypassPermissions
-         ```
-      3. 评估结果 PASS → 执行升级：
+      2. 对每个通过 V1 的候选，评估 V2 + V3：
+         - V2 (Predictive Power): 能构造一个具体未来场景吗？如果没有这个 belief，agent 会犯错吗？
+         - V3 (Non-obvious): 一个全新 agent 没有这个 belief 会自然犯同样的错吗？
+      3. 全部 PASS → 执行升级：
          a. 在 beliefs-candidates.md 中标记 `→ **graduated YYYY-MM-DD** (target: <DNA|Workflow|KB> — <具体位置>)`
          b. 将内容写入目标位置（AGENTS.md / workloop.yaml / wiki/）
          c. git commit
-      4. 评估结果 FAIL → 记录理由，不升级
+      4. FAIL → 记录理由（哪个 V 没过），不升级
       5. 没有候选 → 报告 "0 candidates at graduation threshold"
       
-      ⚠️ 必须用独立 subagent 评估，不能自评。
+      ⚠️ 评估必须严格——大多数候选应该 FAIL。只有真正跨场景、有预测力、非显而易见的才升级。
     branches:
       - condition: "完成"
         next: memory_hygiene
