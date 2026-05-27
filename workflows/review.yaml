@@ -163,12 +163,13 @@ nodes:
       ## Eval Baseline
       ⚠️ **数据新鲜度纪律**：所有 Eval 数据必须当轮重新查询。禁止沿用旧数据标 [已验证]。
       如果因 token/时间限制无法重新查询，必须标 [未验证/沿用 MM-DD 数据]，不得标 [已验证]。
+      **工具可用时必须用工具验证**：gogetajob 能跑就必须跑，不允许"工具存在但我选择不用"。
       - PR merge rate: X% (N merged / M total) — 来源: gogetajob stats [已验证] — ⚠️ 必须当轮跑 `gogetajob stats`
-      - beliefs-candidates total: N 条 — ⚠️ 必须用以下命令精确计数所有 active entries（排除 graduated/retracted）：
+      - beliefs-candidates total: N gradients + N directives — ⚠️ 必须用以下命令精确计数，区分 gradient 和 directive：
         ```bash
-        awk '/graduated [0-9]{4}|retracted [0-9]{4}/ {next} /^## 2026-|^### .*2026-|^- 2026-|^- \*\*2026-/ {total++} END{print "ACTIVE:", total}' beliefs-candidates.md
+        awk '/graduated [0-9]{4}|retracted [0-9]{4}/ {next} /\[directive\]/ {dir++; next} /^## 2026-|^### .*2026-|^- 2026-|^- \*\*2026-/ {grad++} END{print "GRADIENTS:", grad+0, "DIRECTIVES:", dir+0, "TOTAL:", grad+dir+0}' beliefs-candidates.md
         ```
-        这条命令覆盖四种条目格式（## section / ### subsection / - inline / - **bold**），并排除已毕业/撤回条目。
+        Gradient = 走 Triple Verification 的行为候选。Directive = Luna 直接指令，不走毕业流程。只有 gradient 计入 "active candidates" 指标。
       - wiki: cards N / projects N — ⚠️ 必须当场跑 `ls | wc -l`，不沿用旧数据：
         ```bash
         echo "cards: $(ls ~/.openclaw/workspace/wiki/cards/ | wc -l), projects: $(ls ~/.openclaw/workspace/wiki/projects/ | wc -l)"
