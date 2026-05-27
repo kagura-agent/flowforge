@@ -68,6 +68,13 @@ nodes:
     task: |
       **Beliefs Graduation Gate — 扫描并执行升级**
       
+      0. **先跑 gradient-scan**，检查 memory 中有没有已有 candidate 的新证据（自动 count increment）：
+         ```bash
+         bash ~/.openclaw/workspace/tools/gradient-scan.sh --days 7
+         ```
+         如果有 pattern 命中，去 beliefs-candidates.md 更新对应 count 和日期。
+         灵感来源：Elephant Agent PR#43 Signal Extraction（从历史 episode 自动提取信号）
+
       1. 扫描 beliefs-candidates.md，找出所有 count ≥ 3 或标记为 "repeated" 的候选
          ```bash
          grep -n "count.*[3-9]\|repeated\|3x\|V1.*pass" ~/.openclaw/workspace/beliefs-candidates.md
@@ -113,6 +120,11 @@ nodes:
          - Jaccard ≥0.5 的：确认是否真重复，merge 或 supersede（保留更新/更完整的）
          - 0.35-0.5 的：检查是否需要 cross-link（[[wikilink]]互相引用）
          - 目的：减少冗余，让检索更精准（同一话题散落多处 = 检索噪音）
+
+      6. **L1.md 自动再生成**（每次 review 都做）：
+         - 运行 `bash ~/.openclaw/workspace/wiki/scripts/regen-l1.sh`
+         - 自动扫描 659+ wiki notes，按 status/recency/wikilinks 评分，生成 ≤30 行导航索引
+         - 取代手动维护 L1.md，保证指针始终指向最相关的笔记
 
       ⚠️ 编辑文件时：先 read 获取精确内容，再 edit。不要凭记忆猜 oldText。
       每次改动都 git diff --stat 确认，不要误删有价值的信息。
