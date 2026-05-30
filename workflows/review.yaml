@@ -77,7 +77,7 @@ nodes:
 
       1. 补充：检查 beliefs-candidates.md 中显式标记 "count ≥ 3" 或 "repeated" 的（pipeline 可能漏掉 keyword 定义不完整的）：
          ```bash
-         grep -n "count.*[3-9]\|repeated\|3x\|V1.*pass" ~/.openclaw/workspace/beliefs-candidates.md
+         grep -n "count.*[3-9]\|repeated\|3x\|V1.*pass\|第[3-9]次\|第[1-9][0-9]次" ~/.openclaw/workspace/beliefs-candidates.md
          ```
       2. 对每个通过 V1 的候选，评估 V2 + V3：
          - V2 (Predictive Power): 能构造一个具体未来场景吗？如果没有这个 belief，agent 会犯错吗？
