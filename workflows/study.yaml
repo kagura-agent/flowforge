@@ -260,9 +260,19 @@ nodes:
       - **跨项目/领域级知识**（理论、框架、跨项目对比、研究洞察）→ memex 卡片（带双向链接）
         写完后：cd ~/.openclaw/workspace/wiki && git add -A && git commit -m "card: 卡片名" && git push
         例：自进化四层模型、mechanism-vs-evolution、agent 信任问题的生态位
-      - **学习方法 pattern**（跨领域通用的研究方式）→ beliefs-candidates.md
+      - **学习方法 pattern**（跨领域通用的研究方式）→ 用 add-gradient.sh 写入：
+        `bash ~/.openclaw/workspace/tools/add-gradient.sh "<pattern>" "<行为改变>" --source study`
         例：读代码前先读 test、对比两个项目比单独看一个更有效
+        ⚠️ 必须调用 add-gradient.sh，不要直接编辑 beliefs-candidates.md。脚本处理去重+日志。
       不确定的先放 wiki。跨项目洞察必须写 memex——这是知识网络的核心节点。
+
+      **Gradient 自检**（不可跳过）：
+      回顾本轮执行，至少回答一个问题：
+      - 工具有摩擦吗？（命令不好用、输出难读、步骤多余）
+      - 执行中发现了什么 pattern？（某种做法比预期好/差）
+      - 有没有重复做的事情可以自动化？
+      如果任何一个答案是 yes → 跑 add-gradient.sh 记录。
+      如果全部 no → 写一句话到 memory 解释为什么本轮没有可提取的 gradient（这本身是信号）。
 
       **方向影响**：
       - 验证了直觉？→ 记录证据
