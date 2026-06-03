@@ -7,7 +7,20 @@ nodes:
     task: |
       工具进化 Review（diff-scoped，只深入检查变更项）。
       
-      **第〇步：运行工具自测**
+      **第〇步（前置）：审计跟踪 — 检查上次审计修正落实**
+      读最近一次 evolution-log 中的审计修正（daily-audit 产出），逐条检查落实状态：
+      ```bash
+      # 找到最近的 evolution-log 审计条目
+      latest_log=$(ls -t ~/.openclaw/workspace/evolution-log/2026-*.md | head -1)
+      echo "=== Latest evolution-log: $latest_log ==="
+      grep -A2 '🔴\|修正\|行动\|F[0-9]' "$latest_log" | head -30
+      ```
+      对每条修正：
+      - ✅ 已落实 → 一行确认
+      - ❌ 未落实 → 本次 review 必须处理或升级为 blocker
+      - 连续 2 天未落实的修正 → 红旗，当场执行或 @ Luna
+      
+      **第一步：运行工具自测**
       ```bash
       bash ~/.openclaw/workspace/tools/tool-selftest.sh
       ```
@@ -56,6 +69,7 @@ nodes:
   dna_review:
     task: |
       DNA 进化 Review。
+      0. **DNA Overhead Check**: `bash tools/dna-overhead-check.sh` — 检查规则膨胀、重叠、快速路径成本。有 ⚠️ 就处理。
       1. beliefs-candidates.md 有重复 3 次以上该升级的吗？
       2. 过去 24h DNA 变更（git log），行为真的变了吗？
       3. DNA 文件之间一致吗？
@@ -108,7 +122,12 @@ nodes:
          - 项目的技术细节（功能列表、PR 历史）→ wiki/projects/
          - MEMORY.md 只留索引级描述
 
-      4. **Wiki 退役扫描**（每周一次，周一 review 时做）：
+      4. **生命周期检查**：运行 `bash tools/memory-lifecycle.sh`
+         - Stale promoted entries >14 天 → 归档（删除该行，关键信息已在 wiki/projects/ 或 memory/ 中）
+         - Line budget >85% → 必须清理
+         - "verify still current" 标记 → 逐条确认是否仍有效
+
+      5. **Wiki 退役扫描**（每周一次，周一 review 时做）：
          - 运行 `bash ~/.openclaw/workspace/wiki/scripts/retire-candidates.sh --threshold 70 --top 10`
          - Score ≥80 的强退役候选人：检查内容，确认无价值后 archive 或 delete
          - Score 60-79 的：标注 status: stale，下次 review 再看
