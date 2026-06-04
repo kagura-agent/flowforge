@@ -8,6 +8,10 @@ nodes:
     task: |
       **读准则**：cat ~/.openclaw/workspace/wiki/study/guide.md
       理解学习方向和原则。然后读 TODO.md「📚 学习」section，看有没有指定任务。
+
+      **DNA Preflight**（不能跳过）：
+      `bash tools/dna-preflight.sh --context study --days 3`
+      看最近违反过哪些已有规则，记住这些提醒，本轮避免重犯。
     branches:
       - condition: TODO 有指定学习任务
         next: todo_task
