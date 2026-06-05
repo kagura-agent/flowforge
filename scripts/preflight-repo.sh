@@ -82,9 +82,35 @@ else
   fi
 fi
 
-# --- Check 3: Competing PRs ---
+# --- Check 3: Issue live state + prior interaction ---
 if [[ -n "$ISSUE" ]]; then
-  echo "📋 Check 3: Competing PRs for #${ISSUE}"
+  echo "📋 Check 3a: Issue live state (must be OPEN on GitHub)"
+  ISSUE_STATE=$(gh issue view "$ISSUE" --repo "$REPO" --json state -q '.state' 2>/dev/null || echo "ERROR")
+  if [[ "$ISSUE_STATE" == "ERROR" ]]; then
+    warn "Could not query issue state"
+  elif [[ "$ISSUE_STATE" != "OPEN" ]]; then
+    fail "Issue #${ISSUE} is ${ISSUE_STATE} on GitHub (gogetajob DB may be stale)"
+  else
+    pass "Issue #${ISSUE} is OPEN"
+  fi
+
+  echo "📋 Check 3b: Prior interaction (dedup check)"
+  MY_COMMENTS=$(gh issue view "$ISSUE" --repo "$REPO" --json comments --jq '[.comments[] | select(.author.login=="'"$MY_LOGIN"'")] | length' 2>/dev/null || echo "ERROR")
+  if [[ "$MY_COMMENTS" == "ERROR" ]]; then
+    warn "Could not check prior comments"
+  elif [[ "$MY_COMMENTS" -gt 0 ]]; then
+    # Check if any comment contains withdraw/放弃 keywords
+    WITHDRAW=$(gh issue view "$ISSUE" --repo "$REPO" --json comments --jq '[.comments[] | select(.author.login=="'"$MY_LOGIN"'") | select(.body | test("withdraw|放弃|won.t be able|unassign|stepping back"; "i"))] | length' 2>/dev/null || echo "0")
+    if [[ "$WITHDRAW" -gt 0 ]]; then
+      fail "Already WITHDRAWN from #${ISSUE} — must not re-claim (NemoClaw#4710 lesson)"
+    else
+      warn "Already commented on #${ISSUE} (${MY_COMMENTS} comments) — check before claiming again"
+    fi
+  else
+    pass "No prior interaction with #${ISSUE}"
+  fi
+
+  echo "📋 Check 3c: Competing PRs for #${ISSUE}"
   COMPETING=$(gh pr list --repo "$REPO" --search "$ISSUE" --state=open --json number,author -q '[.[] | select(.author.login != "'"$MY_LOGIN"'")] | length' 2>/dev/null || echo "ERROR")
   if [[ "$COMPETING" == "ERROR" ]]; then
     warn "Could not check competing PRs"
@@ -98,7 +124,7 @@ if [[ -n "$ISSUE" ]]; then
     pass "No competing PRs for #${ISSUE}"
   fi
 else
-  echo "📋 Check 3: Competing PRs — skipped (no issue specified)"
+  echo "📋 Check 3: Issue state/dedup/competing PRs — skipped (no issue specified)"
 fi
 
 # --- Check 4: Repo size ---
