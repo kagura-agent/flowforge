@@ -90,6 +90,9 @@ nodes:
       - 30 分钟过去了还在翻第 4 页搜索结果 → 你该停下来深入前 3 个而不是继续翻
       - 所有判断都是"不相关"/"已知" → 搜索词太窄或在无意识筛掉不舒服的信号
       - 没有一个项目让你感到意外 → 你只看了符合预期的东西
+      8. **候选预检**（选定 deep-read 目标后必须跑）：
+         `bash tools/scout-precheck.sh <candidate1> <candidate2> ...`
+         ⛔ 全部 EXISTING → 换目标或切 followup/apply。不要重读已有 deep-dive 笔记的项目。
       汇报侦察结果。
     branches:
       - condition: "发现了值得深入研究的方向或项目"
@@ -185,6 +188,9 @@ nodes:
          - 跟 agent 生态的其他项目是什么关系？（竞争？互补？上下游？）
          - 跟我们的方向有什么关联？
       5. 带着问题读，不是漫无目的地浏览
+      6. **入口预检**（不可跳过）：
+         `bash tools/scout-precheck.sh <target-project>`
+         如果 EXISTING + deep (>100L) + <7d ago → 你在重复劳动。要么找新角度要么换目标。
 
       **🚩 Red Flags — 如果出现以下症状，你在浏览不是在深读：**
       - 笔记里大段引用 README 但没有自己的分析 → 你在搬运不是在理解
