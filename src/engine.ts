@@ -18,6 +18,16 @@ function loadWorkflow(name: string): Workflow {
 }
 
 function requireActiveInstance(workflowName?: string) {
+  if (!workflowName) {
+    // When no -w flag, check if multiple instances are active
+    const all = db.listActiveInstances();
+    if (all.length > 1) {
+      const lines = all.map(a => `  - ${a.workflow_name} (#${a.id}, at node '${a.current_node}')`);
+      throw new Error(
+        `Multiple active instances — use -w to specify which one:\n${lines.join("\n")}\n\nExample: flowforge next -w ${all[0].workflow_name}`
+      );
+    }
+  }
   const inst = db.getActiveInstance(workflowName);
   if (!inst) throw new Error("No active instance. Use 'flowforge start <workflow>' first.");
   return inst;
