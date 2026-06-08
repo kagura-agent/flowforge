@@ -145,6 +145,17 @@ nodes:
   followup:
     task: |
       跟进已关注项目的新动态：
+
+      **⛔ 前置鲜度门控**（不可跳过）：
+      先跑两条命令判断 followup 是否值得做：
+      ```
+      bash ~/.openclaw/workspace/study/tracking-due.sh
+      bash ~/.openclaw/workspace/study/tracking-activity.sh --all
+      ```
+      如果 **到期项目 = 0** 且 **ACTIVE 项目 = 0**（全部 QUIET）→ **直接选 branch 2（无新动态）**，不做后续步骤。
+      记录到 memory：「Followup freshness gate: 0 due + 0 active → skipped」
+      原理：同日对同一 portfolio 反复检查、无新 push 也无到期项目时，followup 是可预见的 no-op（06-07 实证）。
+
       0. **先看组合健康**：`bash ~/.openclaw/workspace/study/tracking-health.sh` — 如果 auto-drop candidates > 5 或总量 > 40，先清理再跟进
       0a. **再查到期项目**：`bash ~/.openclaw/workspace/study/tracking-due.sh` 看哪些 tracking item 到了 revisit 日期
       0a2. **TTL 审计**：`bash ~/.openclaw/workspace/study/audit-targets.sh` — 检查 targets.md 主列表是否有超 TTL 的 stale 条目（scout 14d / following 21d / deep-dive 30d），有就顺手清理
