@@ -1,6 +1,6 @@
 # FlowForge vs United Workforce (UWF) — Comparison Notes
 
-> Date: 2026-06-10. Based on review of shazhou-ww/united-workforce + shazhou-ww/ocas.
+> Date: 2026-06-10. Based on review of [united-workforce](https://github.com/shazhou-ww/united-workforce) + [ocas](https://github.com/shazhou-ww/ocas).
 
 ## What UWF Is
 
