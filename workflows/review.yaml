@@ -139,7 +139,13 @@ nodes:
          - 0.35-0.5 的：检查是否需要 cross-link（[[wikilink]]互相引用）
          - 目的：减少冗余，让检索更精准（同一话题散落多处 = 检索噪音）
 
-      6. **L1.md 自动再生成**（每次 review 都做）：
+      6. **beliefs-candidates 自动退役**（每次 review 都做）：
+         - 运行 `bash ~/.openclaw/workspace/tools/beliefs-auto-retract.sh`
+         - 自动退役 count=1 且 30+ 天无复现的 gradient 条目
+         - 减少管线噪音，让活跃 pattern 更突出
+         - 退役后 git commit（如有变更）
+
+      7. **L1.md 自动再生成**（每次 review 都做）：
          - 运行 `bash ~/.openclaw/workspace/wiki/scripts/regen-l1.sh`
          - 自动扫描 659+ wiki notes，按 status/recency/wikilinks 评分，生成 ≤30 行导航索引
          - 取代手动维护 L1.md，保证指针始终指向最相关的笔记
