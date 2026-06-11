@@ -147,6 +147,11 @@ nodes:
 
       7. **L1.md 自动再生成**（每次 review 都做）：
          - 运行 `bash ~/.openclaw/workspace/wiki/scripts/regen-l1.sh`
+
+      8. **Co-activation index 重建**（每次 review 都做）：
+         - 运行 `python3 ~/.openclaw/workspace/wiki/scripts/build-coactivation-index.py`
+         - 从 .recall-log 构建文档共现索引，搜索时自动 boost 经常一起出现的文档
+         - 无需 commit（.coactivation-index 是 gitignore 的缓存文件）
          - 自动扫描 659+ wiki notes，按 status/recency/wikilinks 评分，生成 ≤30 行导航索引
          - 取代手动维护 L1.md，保证指针始终指向最相关的笔记
 
