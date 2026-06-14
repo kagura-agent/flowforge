@@ -111,6 +111,12 @@ nodes:
   memory_hygiene:
     task: |
       MEMORY.md 记忆卫生（inspired by Claude Code Auto Dream）。
+
+      0. **日记压缩**（每天执行）：压缩昨天 memory 文件中的重复 no-action 巡检条目
+         - 运行 `bash tools/compress-daily-memory.sh --apply`（默认处理昨天的文件）
+         - 把 8 条「虾信巡检：全清」压成 1 行摘要，保留有实际事件的条目
+         - 典型压缩：200-300 行 / 10-13%
+
       读 MEMORY.md，执行三项清理：
 
       1. **去重**：有没有重复章节？（如"新项目"出现多次、同一信息不同位置写了两遍）
