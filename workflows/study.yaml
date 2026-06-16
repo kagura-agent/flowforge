@@ -1,9 +1,28 @@
 name: study
 description: 学习循环 — 观察 agent 生态动向，深入研究项目，校准我们的方向
 
-start: align
+start: saturation_gate
 
 nodes:
+  saturation_gate:
+    task: |
+      **饱和噪音门控**（自动跳过重复空转）：
+      `bash tools/study-saturation-gate.sh`
+      如果今天 memory 里已有 ≥2 次「全模式饱和」记录，直接跳过本轮。
+      原理：cron 每 30min 触发，饱和后每次走完整 workflow 产生 16+ 行噪音（06-15 实测）。
+    branches:
+      - condition: "OPEN — 继续学习"
+        next: align
+      - condition: "SATURATED — 今天已饱和，跳过"
+        next: skip_saturated
+
+  skip_saturated:
+    task: |
+      今日 study 已饱和（≥2 次全模式跳过）。
+      **只写一行到 memory**：`Study saturation gate: skipped (Nth today)`
+      不做任何其他操作。
+    terminal: true
+
   align:
     task: |
       **读准则**：cat ~/.openclaw/workspace/wiki/study/guide.md
@@ -77,6 +96,7 @@ nodes:
          ⛔ 借口"我已经知道这个项目了" → 知识衰减真实存在，上次的笔记可能有你忘了的细节
       1. 看 GitHub trending（AI/agent 相关）、HN、Twitter/X 上最近在讨论什么
          **优先用 GitHub API search**（`gh api search/repositories?q=topic:ai-agent+created:>YYYY-MM-DD&sort=stars`）比 scrape trending 页更可靠、可复现
+         **HN 用 Algolia API**：`bash tools/hn-scan.sh`（默认 7 天 ai+agent 话题，可 --query / --days 调参）。不要用 web_search 或 web_fetch 扫 HN——已知不可靠（3 次 gradient 实证）
       2. 已关注项目有没有大的方向变化（新 release、架构重构、重要讨论）
       3. 有没有新冒出来的项目或趋势
       4. 核心问题：**业界在做 agent 的什么？钱和注意力往哪里流？**
@@ -110,7 +130,7 @@ nodes:
       0. **先搜已有知识**：`bash ~/.openclaw/workspace/wiki/search.sh "agent trending" --limit 3`（hybrid search），跳过已有深度笔记的项目
       1. GitHub trending today（AI/agent 相关前 10）— 记项目名 + stars + 一句话
          **优先用 GitHub API search**（sort=stars, 按周过滤）比 web scrape 更稳定
-      2. HN front page 扫一眼 — 有没有 agent 相关的讨论
+      2. HN 用 `bash tools/hn-scan.sh --days 3 --min-points 10` — 有没有 agent 相关的讨论
       3. 每个发现只写一行判断："值得深入" / "已知" / "不相关"
       4. **饱和判断**：前 3 个结果都是"已知" → 停止扫描，直接写趋势总结（生态稳定期信号）
       5. 如果有 "值得深入" 的 → 记到 wiki/projects/backlog.md
@@ -133,6 +153,7 @@ nodes:
          - 验证一个假设（EXP 系列）
          - 把抽象洞察变成具体改动
       3. 做完之后验证：改了之后有什么不同？
+      4. **回归门控**（工具改动专用）：如果改了 tools/ 或 wiki/scripts/ 下的文件，跑 `bash tools/regression-gate.sh` 确认基线 benchmark 没退步。
 
       **🚩 Red Flags — 如果出现以下症状，你在自欺不是在应用：**
       - 选了最容易的洞察而不是最有价值的 → 你在避难就易
@@ -168,6 +189,9 @@ nodes:
          - 重要的 issue 讨论（设计决策、方向争论）— **优先找批评性 issue**（architecture critiques 暴露架构假设比读源码更快）
          - 新的 release
       3. 有没有跟我们方向相关的新信号？
+      4. **更新 targets.md**（用脚本，不手动编辑）：
+         `bash ~/.openclaw/workspace/study/tracking-update.sh <project-name> [--stars N] [--notes "..."] [--depth scout|following|deep-dive]`
+         每个跟进过的项目都更新日期和笔记。`--list` 看全部，`--stale 14` 看过期项目。
       汇报哪些项目有值得深入的新动态。
     branches:
       - condition: "有项目有值得学习的新动态"
