@@ -1,7 +1,21 @@
 import { Command } from "commander";
 import { readFileSync, readdirSync, existsSync } from "fs";
-import { join, resolve } from "path";
+import { dirname, join, resolve } from "path";
+import { fileURLToPath } from "url";
 import * as engine from "./engine.js";
+
+// Read version from package.json so CLI version stays in sync with manifest
+function readPkgVersion(): string {
+  try {
+    const here = dirname(fileURLToPath(import.meta.url));
+    // dist/index.js → ../package.json
+    const pkgPath = resolve(here, "..", "package.json");
+    const pkg = JSON.parse(readFileSync(pkgPath, "utf8"));
+    return typeof pkg.version === "string" ? pkg.version : "unknown";
+  } catch {
+    return "unknown";
+  }
+}
 
 // Auto-load workflows from workflows/ directory
 function autoLoadWorkflows() {
@@ -35,7 +49,7 @@ function autoLoadWorkflows() {
 autoLoadWorkflows();
 
 const program = new Command();
-program.name("flowforge").description("Personal workflow engine").version("1.1.0");
+program.name("flowforge").description("Personal workflow engine").version(readPkgVersion());
 
 program
   .command("define <yaml>")
