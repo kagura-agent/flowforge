@@ -253,6 +253,23 @@ program
   });
 
 
+program
+  .command("cleanup")
+  .description("Auto-complete stale active instances (default: >24h without update)")
+  .option("--stale-hours <N>", "Hours of inactivity before auto-completing", parseInt)
+  .action((opts) => {
+    const hours = opts.staleHours ?? 24;
+    const cleaned = engine.cleanup(hours);
+    if (cleaned.length === 0) {
+      console.log(`No stale instances (threshold: ${hours}h).`);
+    } else {
+      console.log(`Cleaned ${cleaned.length} stale instance(s):`);
+      for (const c of cleaned) {
+        console.log(`  #${c.id}  ${c.workflow_name}  at '${c.current_node}'  (last update: ${c.updated_at})`);
+      }
+    }
+  });
+
 function printStatus(workflowName?: string) {
   const s = engine.status(workflowName);
   console.log(`\n📍 Current: ${s.currentNode}`);

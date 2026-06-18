@@ -5,6 +5,10 @@ start: audit
 nodes:
   audit:
     task: |
+      **Step 0: FlowForge 僵尸清理**
+      运行 `flowforge cleanup --stale-hours 18` 自动完结卡死超过 18 小时的 workflow 实例。
+      记录清理了几个、哪些 workflow。
+
       审计今天的 daily review。
       1. 读 evolution-log/当天日期.md（3:00 AM review 的产出）
       2. 重点审计行为合规性（不是数数字）：

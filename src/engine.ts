@@ -243,6 +243,10 @@ export function getAction(workflowName?: string, previousResult?: string): FlowA
   };
 }
 
+export function cleanup(staleHours: number = 24) {
+  return db.cleanupStaleInstances(staleHours);
+}
+
 export function advanceWithResult(result: string, workflowName?: string): FlowAction {
   // Parse result to extract branch choice (looks for 'Branch: N' or 'branch N' pattern)
   let branch: number | undefined;

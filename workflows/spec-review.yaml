@@ -1,0 +1,183 @@
+name: spec-review
+description: "Multi-model spec review — 3 perspectives (Architect, Implementer, Adversary) review design documents"
+version: "1.0"
+start: parse_request
+
+nodes:
+  parse_request:
+    task: |
+      Parse the spec review request. Extract:
+      - Source: GitHub issue link, issue number, or inline spec text
+      - If GitHub issue: extract owner, repo, issue_number
+      - If inline text: save to a temp file for reviewers
+
+      Fetch the spec content:
+      - GitHub issue: `gh issue view <number> -R <owner/repo> --json title,body`
+      - Inline: use the message content directly
+
+      Save the spec to `~/.openclaw/workspace/spec-review/reviews/spec-<id>-source.md`
+      where <id> is the issue number or a short identifier.
+    next: load_context
+
+  load_context:
+    task: |
+      Discover what this project IS — both its intent (vision/positioning)
+      and its substance (existing code/architecture). Do NOT assume any
+      specific file naming convention. Different projects sediment their
+      identity in different places.
+
+      **Step 1: Load the review standard**
+      Read `~/.openclaw/workspace/spec-review/prompts/default.prompt.md`.
+      If `prompts/<repo>.prompt.md` exists, prefer it (project-tuned).
+
+      **Step 2: Discover project intent (graceful)**
+      Search the repo for whatever materials exist; collect what you find,
+      don't fail when something is missing. Try in order:
+
+      a. Top-level docs (case-insensitive):
+         - README*, CONTRIBUTING*, ROADMAP*, VISION*, PRINCIPLES*, ABOUT*
+         - Any project-named .md at the root (e.g. cove.md, gogetajob.md)
+      b. Docs directories: docs/, doc/, .docs/, design/, specs/, about/
+      c. Repo metadata: package.json description, repo description via
+         `gh repo view <owner/repo> --json description`
+      d. If the spec references other issues/PRs, fetch them for context
+
+      Read the most promising 3-5 docs in full. Note what's missing.
+
+      **Step 3: Discover substance (existing code)**
+      Map the actual code shape so reviewers can spot architectural
+      conflicts. Don't read everything — just the topology:
+         - `tree -L 2 -d` or `ls` on top-level dirs (packages/, src/, etc.)
+         - For monorepos: list each package's role
+         - If the spec touches a specific area, list that subtree
+
+      **Step 4: Fallback when documentation is thin**
+      First principle: thin context usually means under-searched, not
+      under-documented. Before falling back, double-check you've looked
+      at all top-level .md, every docs/* subdirectory, pinned issues, and
+      recently merged PRs.
+
+      If genuinely sparse:
+         - Read recent N issues/PRs to infer active direction:
+           `gh issue list -R <owner/repo> --state all --limit 20`
+           `gh pr list -R <owner/repo> --state merged --limit 10`
+         - Recent activity = implicit positioning
+         - Pinned issues/discussions often hold the "why" of the project
+
+      **Step 5: Assemble the context brief**
+      Combine into a single brief reviewers will receive:
+         - Found vision/positioning docs (full text)
+         - Code topology summary
+         - Recent direction signals (if docs were thin)
+         - **Explicit acknowledgment of what's MISSING** — so reviewers
+           know to label findings as "can't fully judge X without
+           project context for Y" rather than hallucinating.
+
+      The reviewer's job is to evaluate the spec against THIS project's
+      reality, not against a generic standard. Discovery quality directly
+      determines review quality.
+    next: spawn_reviewers
+
+  spawn_reviewers:
+    task: |
+      Spawn 3 independent reviewer subagents in parallel (sessions_spawn, mode: "run"):
+      - 🏗️ Architect: model `default-llm-sg/gpt-5.5`
+        Focus: design consistency, over-engineering, missing abstractions, architectural fit
+      - 🔍 Implementer: model `default-llm-sg/claude-opus-4.7`
+        Focus: ambiguous definitions, implementation feasibility, missing details, edge cases
+      - 🛡️ Adversary: model `default-llm-sg/gemini-2.5-pro`
+        Focus: failure modes, security/reliability gaps, wrong assumptions, what can go wrong
+
+      Each gets:
+      - The full spec content
+      - The review standard (from load_context)
+      - The project context (existing patterns, architecture)
+      - Their specific focus area and persona
+
+      Each reviewer must:
+      - `export https_proxy=http://127.0.0.1:1083` first (for any GitHub API calls)
+      - Write their review to `~/.openclaw/workspace/spec-review/reviews/spec-<id>-<name>.md`
+        (e.g. `reviews/spec-388-architect.md`)
+      - Output the file path as their final message
+      - NOT use sessions_yield, sessions_send, or any messaging tool
+
+      Use sessions_yield to wait for all 3 to complete.
+    next: consolidate
+
+  consolidate:
+    task: |
+      Read all 3 reviewer outputs from `reviews/spec-<id>-*.md`.
+
+      Consolidate into a structured summary:
+
+      1. **Deduplicate**: Same issue found by multiple reviewers → merge, note consensus
+      2. **Classify by severity**:
+         - Blocker (2+ reviewers agree, or single reviewer with strong justification,
+           OR misalignment with project's core positioning)
+         - Major (significant risk, at least 1 reviewer flagged)
+         - Minor (nice to fix, low risk)
+         - Suggestion (optional improvement)
+      3. **Format each finding**:
+         - What / Why / Suggested Fix
+         - Which reviewer(s) found it
+         - Confidence level (consensus = high, single reviewer = medium)
+      4. **Overall verdict**:
+         - If any Blockers: "🚫 Not ready for implementation — N blocker(s) to resolve"
+         - If only Major/Minor: "⚠️ Implementable with revisions — N major issue(s)"
+         - If clean: "✅ LGTM — ready for implementation"
+      5. **Meta note (optional)**: If load_context found the project lacks
+         clear positioning/vision docs and this hindered review quality,
+         add a Meta section suggesting (not requiring) the project sediment
+         its direction somewhere readable. Don't make it a Blocker — it's
+         a project-level observation, not a spec issue.
+
+      Write consolidated review to `reviews/spec-<id>-consolidated.md`.
+    next: respond
+
+  respond:
+    task: |
+      Post the consolidated review:
+      1. Send summary to the source channel (#spec-review or wherever the request came from)
+      2. If the spec was a GitHub issue: post as a comment on the issue via
+         `gh issue comment <number> -R <owner/repo> --body-file reviews/spec-<id>-consolidated.md`
+
+      Format for channel (Discord-friendly, no tables):
+      ```
+      ## Spec Review: <title>
+
+      **Verdict:** [emoji + verdict]
+
+      ### Blockers (N)
+      - ...
+
+      ### Major (N)
+      - ...
+
+      ### Minor / Suggestions (N)
+      - ...
+
+      Full review: [link or "see thread"]
+      ```
+
+      If the review is LGTM, keep it short:
+      "✅ **LGTM** — spec looks solid. [1-2 sentence summary of what's good]"
+    next: record
+
+  record:
+    task: |
+      Record the review for tracking and improvement:
+      1. Write to `runs/spec-<id>.md`:
+         - Date, spec reference, verdict
+         - Key findings summary
+         - Any patterns to watch for in future specs
+      2. If patterns emerge across multiple spec reviews:
+         - Update the default prompt to catch them earlier
+         - Add project-specific rules if needed
+
+      Commit changes:
+      ```bash
+      cd ~/.openclaw/workspace/spec-review
+      git add -A
+      git commit -m "spec-review: <issue-id> — <verdict>"
+      ```
+    terminal: true

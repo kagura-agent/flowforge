@@ -130,6 +130,32 @@ export function getHistory(instanceId: number) {
   }[];
 }
 
+export function cleanupStaleInstances(staleHours: number): { id: number; workflow_name: string; current_node: string; updated_at: string }[] {
+  const rows = db.prepare(
+    `SELECT id, workflow_name, current_node, updated_at FROM instances
+     WHERE status = 'active'
+     AND updated_at < datetime('now', '-' || ? || ' hours')
+     ORDER BY id`
+  ).all(staleHours) as { id: number; workflow_name: string; current_node: string; updated_at: string }[];
+
+  if (rows.length > 0) {
+    const ids = rows.map(r => r.id);
+    const placeholders = ids.map(() => '?').join(',');
+    // Close open history entries
+    db.prepare(
+      `UPDATE history SET exited_at = datetime('now'), branch_taken = 'auto-cleanup:stale'
+       WHERE instance_id IN (${placeholders}) AND exited_at IS NULL`
+    ).run(...ids);
+    // Mark instances as completed
+    db.prepare(
+      `UPDATE instances SET status = 'completed', updated_at = datetime('now')
+       WHERE id IN (${placeholders})`
+    ).run(...ids);
+  }
+
+  return rows;
+}
+
 export type InstanceRow = {
   id: number;
   workflow_name: string;
