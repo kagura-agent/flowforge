@@ -167,6 +167,11 @@ nodes:
     task: |
       跟进已关注项目的新动态：
 
+      **📊 CalibrationLog check**（先验证到期的预测）：
+      `bash tools/calibration-log.sh due`
+      有到期预测 → 检查实际情况，用 `calibration-log.sh verify <id> --outcome correct|wrong|partial` 记录结果。
+      这是追踪自己判断准确度的工具（来自 scholar-loop 模式）。
+
       **⛔ 前置鲜度门控**（不可跳过）：
       跑一条命令看全景状态（替代原来 3-4 条分散脚本，减少 25%+ 开销）：
       ```
@@ -260,6 +265,10 @@ nodes:
          - 记跟我们方向的关联
          - 记架构洞察和反直觉的发现
       4. git commit && git push 到 kagura-agent/wiki
+      5. **Log predictions**（if any checkable claims surfaced this round）：
+         `bash tools/calibration-log.sh predict "<prediction>" --confidence high|medium|low --context study --due <date>`
+         例："X project will hit Y stars by date"、"this approach will be adopted by Z"、"repo will go dormant"
+         只记可验证的预测，不记主观判断。
       汇报写了什么。
 
       **⛔ Anti-rationalization table — 不要跳过笔记：**
