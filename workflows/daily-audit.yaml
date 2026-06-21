@@ -6,7 +6,7 @@ nodes:
   audit:
     task: |
       **Step 0: FlowForge 僵尸清理**
-      运行 `flowforge cleanup --stale-hours 18` 自动完结卡死超过 18 小时的 workflow 实例。
+      运行 `flowforge cleanup --stale-hours 4` 自动完结卡死超过 4 小时的 workflow 实例。
       记录清理了几个、哪些 workflow。
 
       审计今天的 daily review。

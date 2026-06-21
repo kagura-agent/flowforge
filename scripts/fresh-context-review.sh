@@ -114,7 +114,7 @@ echo "$RESULT"
 echo ""
 
 # Parse verdict
-if echo "$RESULT" | grep -q "^PASS\|PASS —\|PASS$"; then
+if echo "$RESULT" | grep -qE '(^|\*\*)PASS(\*\*|$| —)'; then
   echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
   echo -e "${GREEN}FRESH-CONTEXT REVIEW: PASS${NC}"
   echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"

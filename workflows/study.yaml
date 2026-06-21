@@ -53,6 +53,7 @@ nodes:
 
       **决策辅助**：先跑 `bash ~/.openclaw/workspace/tools/study-saturation.sh`，一条命令看清饱和状态和推荐模式。
       脚本输出 locked/open 状态 + 智能推荐（含周末降级逻辑），不需要手动 grep 3-4 次。
+      **跟进前置检查**：`bash ~/.openclaw/workspace/tools/followup-status.sh`——看有无到期项目。0 items due → 不要选跟进。
       - 连续侦察 2 次以上 → 优先选应用或跟进
       - 连续应用 2 次以上 → 优先选侦察或跟进
       - 不确定 → 快速扫描是最安全的选择
