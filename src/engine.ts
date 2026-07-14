@@ -73,8 +73,24 @@ export function status(workflowName?: string) {
   };
 }
 
-export function next(branch?: number, workflowName?: string, force?: boolean) {
+export function next(branch?: number, workflowName?: string, force?: boolean, fromNode?: string) {
   const inst = requireActiveInstance(workflowName);
+
+  // Guard: if fromNode is specified, only advance if we're still at that node.
+  // This prevents double-advance when both subagent and parent try to advance.
+  if (fromNode && inst.current_node !== fromNode) {
+    return {
+      from: fromNode,
+      to: inst.current_node,
+      branchTaken: null,
+      task: '',
+      branches: null,
+      hasNext: true,
+      terminal: false,
+      skipped: true,  // Signal: already advanced past this node
+    };
+  }
+
   const wf = loadWorkflow(inst.workflow_name);
   const node = wf.nodes[inst.current_node];
   if (!node) throw new Error(`Node '${inst.current_node}' not found`);
@@ -221,12 +237,27 @@ export function getAction(workflowName?: string, previousResult?: string): FlowA
   }
 
   if (node.executor === 'subagent') {
+    // Append self-advance instruction so subagents can advance the workflow
+    // even if the parent session expires (common in cron-triggered flows).
+    // --from-node guard prevents double-advance if parent also advances.
+    const advanceCmd = `cd ${process.env.HOME || '~'}/.openclaw/workspace/flowforge && node dist/flowforge.js next -w ${inst.workflow_name} --from-node ${inst.current_node}`;
+    const advanceFooter = [
+      '',
+      '---',
+      '⚠️ **WORKFLOW ADVANCEMENT (mandatory final step):**',
+      'After completing ALL tasks above, run this command to advance the workflow:',
+      '```',
+      advanceCmd,
+      '```',
+      'Do NOT skip this step. The workflow will stall if you don\'t advance it.',
+    ].join('\n');
+
     return {
       type: 'spawn',
       instanceId: inst.id,
       workflowName: inst.workflow_name,
       node: inst.current_node,
-      task,
+      task: task + advanceFooter,
       branches: node.branches,
       previousResult,
     };

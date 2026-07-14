@@ -76,6 +76,69 @@ nodes:
       The reviewer's job is to evaluate the spec against THIS project's
       reality, not against a generic standard. Discovery quality directly
       determines review quality.
+    next: classify_and_challenge
+
+  classify_and_challenge:
+    task: |
+      **This is the most important step.** Before spawning reviewers, YOU do
+      the high-level judgment that sets the frame for the entire review.
+
+      **Step 1: Classify the spec type**
+
+      | Type | Signal |
+      |------|--------|
+      | Architecture / Tech Choice | Adding a library, choosing a pattern, restructuring code |
+      | Feature / Product | New user-facing behavior, UI flow, interaction |
+      | Integration / API | External interface, contract, protocol |
+      | Data / Schema | Database changes, data model, migration |
+
+      State the classification explicitly.
+
+      **Step 2: Challenge the idea based on type**
+
+      For **Architecture / Tech Choice**:
+      - What is the industry standard for this problem?
+      - Is this spec following the standard, or inventing something?
+      - If standard: what are the KNOWN PITFALLS the industry has already solved?
+      - If non-standard: WHY are they diverging? Is there justification?
+      - Search web if needed to verify current best practices.
+
+      For **Feature / Product**:
+      - What are the concrete user scenarios? List them.
+      - Walk each scenario step by step. Does the spec cover it?
+      - Are the assumed user behaviors real? Or is the spec solving a
+        problem that doesn't actually exist in practice?
+      - What would a user's ALTERNATIVE be without this feature?
+
+      For **Integration / API**:
+      - From the caller's perspective, is this unambiguous?
+      - What do similar APIs in the ecosystem look like?
+      - Backward compatibility? Migration path for existing consumers?
+
+      For **Data / Schema**:
+      - What queries does this actually enable?
+      - What happens at scale? What grows unbounded?
+      - Migration strategy for existing data?
+
+      **Step 3: Direction verdict**
+
+      One of:
+      - ✅ STANDARD — this is a proven pattern, direction is validated by
+        industry. Reviewers should focus on known pitfalls and project-specific fit.
+      - ⚠️ DEBATABLE — valid approach but not the only one. Reviewers should
+        evaluate tradeoffs vs alternatives.
+      - ❌ SUSPECT — contradicts industry consensus or assumes user behavior
+        that doesn't hold. This is a potential Blocker before even looking at details.
+
+      **Step 4: Write the brief**
+
+      Save to `reviews/spec-<id>-classification.md`:
+      - Spec type
+      - Industry context (what's standard, what evidence)
+      - Direction verdict
+      - What reviewers should focus on (given the type and verdict)
+      - Known pitfalls to check for (from industry experience)
+      - User scenarios to verify (for feature specs)
     next: spawn_reviewers
 
   spawn_reviewers:
@@ -92,7 +155,20 @@ nodes:
       - The full spec content
       - The review standard (from load_context)
       - The project context (existing patterns, architecture)
+      - **The classification brief** (from classify_and_challenge) — spec type,
+        direction verdict, what to focus on, known pitfalls to check
       - Their specific focus area and persona
+
+      **Important instructions for reviewers:**
+      - The classification brief tells you the spec type and direction verdict.
+        Don't re-do that analysis. Trust it and focus your energy on your
+        specific lens WITHIN that frame.
+      - If direction verdict is ✅ STANDARD: don't validate direction again.
+        Focus on known pitfalls and project-specific implementation issues.
+      - If direction verdict is ⚠️ DEBATABLE: evaluate the tradeoffs from
+        your persona's angle. Is this the right choice for THIS project?
+      - If direction verdict is ❌ SUSPECT: investigate whether the core
+        approach is wrong. This takes priority over implementation details.
 
       Each reviewer must:
       - `export https_proxy=http://127.0.0.1:1083` first (for any GitHub API calls)

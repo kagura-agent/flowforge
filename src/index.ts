@@ -109,10 +109,15 @@ program
   .option("--branch <N>", "Branch number (1-indexed) for branching nodes", parseInt)
   .option("-w, --workflow <name>", "Target a specific workflow (when multiple are active)")
   .option("--force", "Override loop detection block")
+  .option("--from-node <name>", "Only advance if still at this node (prevents double-advance)")
   .option("--notify", "Output a notification message for the user (e.g. Luna)")
   .action((opts) => {
     try {
-      const result = engine.next(opts.branch, opts.workflow, opts.force);
+      const result = engine.next(opts.branch, opts.workflow, opts.force, opts.fromNode);
+      if (result.skipped) {
+        console.log(`\n⏭️ Already advanced past '${result.from}' → currently at '${result.to}'. No action taken.\n`);
+        return;
+      }
       if (result.blocked) {
         console.log(`\n${result.plateauWarning}`);
         console.log(`\nUse: flowforge next --force to override.`);
