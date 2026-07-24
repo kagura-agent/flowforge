@@ -170,6 +170,25 @@ export function next(branch?: number, workflowName?: string, force?: boolean, fr
   db.addHistory(inst.id, nextNode);
 
   const nextNodeDef = wf.nodes[nextNode];
+
+  // Auto-close if we just moved to a terminal node
+  if (nextNodeDef.terminal) {
+    db.closeHistory(inst.id, nextNode, null);
+    db.setInstanceStatus(inst.id, "done");
+    return {
+      from: inst.current_node,
+      to: nextNode,
+      branchTaken,
+      task: nextNodeDef.task,
+      branches: null,
+      hasNext: false,
+      terminal: true,
+      plateauWarning,
+      plateauLevel,
+      blocked: false,
+    };
+  }
+
   return {
     from: inst.current_node,
     to: nextNode,
@@ -290,14 +309,12 @@ export function advanceWithResult(result: string, workflowName?: string): FlowAc
   const nextResult = next(branch, workflowName);
 
   if (nextResult.terminal) {
-    const inst = db.getActiveInstance(workflowName);
-    if (!inst) throw new Error("No active instance found");
     return {
       type: 'complete',
-      instanceId: inst.id,
-      workflowName: inst.workflow_name,
-      node: "(end)",
-      task: "",
+      instanceId: 0, // instance already closed by next()
+      workflowName: workflowName || '',
+      node: nextResult.to,
+      task: nextResult.task || '',
     };
   }
 

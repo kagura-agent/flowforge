@@ -280,7 +280,7 @@ function printStatus(workflowName?: string) {
   console.log(`\n📍 Current: ${s.currentNode}`);
   console.log(`📋 Task: ${s.task}`);
   if (s.terminal) {
-    console.log(`\n🏁 This is a terminal node. Use: flowforge next to finish.`);
+    console.log(`\n🏁 This is a terminal node. Instance auto-closed.`);
   } else if (s.branches) {
     console.log(`\nBranches:`);
     for (let i = 0; i < s.branches.length; i++) {

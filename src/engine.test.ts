@@ -172,13 +172,15 @@ describe("next", () => {
     expect(result.task).toBe("do step 2");
   });
 
-  it("handles terminal node", () => {
+  it("auto-closes when advancing to terminal node", () => {
     engine.define(linearYaml);
     engine.start("linear");
-    engine.next(undefined, "linear"); // -> step2
-    const result = engine.next(undefined, "linear"); // terminal
+    const result = engine.next(undefined, "linear"); // -> step2 (terminal)
     expect(result.terminal).toBe(true);
-    expect(result.to).toBe("(end)");
+    expect(result.to).toBe("step2");
+    expect(result.task).toBe("do step 2");
+    // Instance should already be closed — no second next() needed
+    expect(() => engine.next(undefined, "linear")).toThrow();
   });
 
   it("follows branch", () => {
@@ -206,10 +208,10 @@ describe("log", () => {
   it("returns history entries", () => {
     engine.define(linearYaml);
     engine.start("linear");
-    engine.next(undefined, "linear");
+    // Don't advance to step2 (terminal auto-closes) — just check start has history
     const result = engine.log("linear");
     expect(result.workflowName).toBe("linear");
-    expect(result.entries.length).toBeGreaterThanOrEqual(2);
+    expect(result.entries.length).toBeGreaterThanOrEqual(1);
   });
 });
 
@@ -233,11 +235,11 @@ describe("active", () => {
 
 describe("reset", () => {
   it("closes old instance and creates new one at start", () => {
-    engine.define(linearYaml);
-    const first = engine.start("linear");
-    engine.next(undefined, "linear"); // advance to step2
-    const result = engine.reset("linear");
-    expect(result.node).toBe("step1");
+    engine.define(branchYaml);
+    const first = engine.start("branchy");
+    // Don't advance to terminal — reset from the start node
+    const result = engine.reset("branchy");
+    expect(result.node).toBe("decide");
     expect(result.id).not.toBe(first.id);
   });
 });
@@ -258,12 +260,12 @@ describe("getAction", () => {
     expect(action.type).toBe("spawn");
   });
 
-  it("returns complete for terminal node", () => {
+  it("returns complete for terminal node via advanceWithResult", () => {
     engine.define(linearYaml);
     engine.start("linear");
-    engine.next(undefined, "linear"); // -> step2 (terminal)
-    const action = engine.getAction("linear");
+    const action = engine.advanceWithResult("done", "linear");
     expect(action.type).toBe("complete");
+    expect(action.node).toBe("step2");
   });
 
   it("appends previousResult to task", () => {
@@ -291,10 +293,11 @@ describe("advanceWithResult", () => {
     expect(action.node).toBe("left_node");
   });
 
-  it("throws when terminal reached and instance already closed", () => {
+  it("throws when instance already closed after auto-close", () => {
     engine.define(linearYaml);
     engine.start("linear");
-    engine.next(undefined, "linear"); // -> step2
+    engine.next(undefined, "linear"); // -> step2 (auto-closed)
+    // Instance is already done, any further operation should throw
     expect(() => engine.advanceWithResult("finishing", "linear")).toThrow("No active instance");
   });
 });

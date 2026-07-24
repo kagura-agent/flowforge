@@ -21,6 +21,7 @@ nodes:
       今日 study 已饱和（≥2 次全模式跳过）。
       **只写一行到 memory**：`Study saturation gate: skipped (Nth today)`
       不做任何其他操作。
+      **最终输出必须是 NO_REPLY**（不要向 channel 发任何消息）。
     terminal: true
 
   align:
@@ -97,6 +98,7 @@ nodes:
          ⛔ 借口"我已经知道这个项目了" → 知识衰减真实存在，上次的笔记可能有你忘了的细节
       1. 看 GitHub trending（AI/agent 相关）、HN、Twitter/X 上最近在讨论什么
          **优先用 GitHub API search**（`gh api search/repositories?q=topic:ai-agent+created:>YYYY-MM-DD&sort=stars`）比 scrape trending 页更可靠、可复现
+         **GitHub 结果必须过 spam filter**：`gh api ... | tools/spam-filter.sh` — 自动过滤 star-farming、crypto scam、SEO 关键词堆砌（07-03 实证：10+ spam repos/次侦察）。只评估 CLEAN 结果。
          **HN 用 Algolia API**：`bash tools/hn-scan.sh`（默认 7 天 ai+agent 话题，可 --query / --days 调参）。不要用 web_search 或 web_fetch 扫 HN——已知不可靠（3 次 gradient 实证）
       2. 已关注项目有没有大的方向变化（新 release、架构重构、重要讨论）
       3. 有没有新冒出来的项目或趋势
@@ -131,6 +133,7 @@ nodes:
       0. **先搜已有知识**：`bash ~/.openclaw/workspace/wiki/search.sh "agent trending" --limit 3`（hybrid search），跳过已有深度笔记的项目
       1. GitHub trending today（AI/agent 相关前 10）— 记项目名 + stars + 一句话
          **优先用 GitHub API search**（sort=stars, 按周过滤）比 web scrape 更稳定
+         **GitHub 结果必须过 spam filter**：`gh api ... | tools/spam-filter.sh` — 过滤 star-farming 和 SEO spam。只评估 CLEAN 结果
       2. HN 用 `bash tools/hn-scan.sh --days 3 --min-points 10` — 有没有 agent 相关的讨论
       3. 每个发现只写一行判断："值得深入" / "已知" / "不相关"
       4. **饱和判断**：前 3 个结果都是"已知" → 停止扫描，直接写趋势总结（生态稳定期信号）
@@ -337,6 +340,16 @@ nodes:
       2. 回顾 wiki/study/study.yaml — 流程有没有卡的地方、多余的步骤？
       3. 更新 TODO.md「📚 学习」section — 新的学习任务加进去，做完的删掉
       有改动 → git commit + push
+
+      **📊 Outcome Logging**（不可跳过）：
+      记录本轮学习的量化结果，用于数据驱动的模式推荐：
+      ```bash
+      bash tools/study-outcome-log.sh --mode <scout|quick|followup|apply> --outcome <signal|partial|empty> [--tag <tag>] [--note "简短说明"]
+      ```
+      - **signal**: 产出了 wiki card、gradient、tool 改动、或具体可行动洞察
+      - **partial**: 有学习但无具体 artifact（趋势确认、方向验证）
+      - **empty**: 无有用产出（饱和、phantom project、生态静默）
+      tag 选择：deep-read / hn-trending / github-trending / tool-change / pattern-extract / direction-confirm
     next: done
 
   done:

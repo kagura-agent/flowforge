@@ -54,8 +54,8 @@ echo "📋 Check 1: Open PR count (limit ≤ 3)"
 OPEN_PRS=$(gh pr list --repo "$REPO" --author="$MY_LOGIN" --state=open --json number -q 'length' 2>/dev/null || echo "ERROR")
 if [[ "$OPEN_PRS" == "ERROR" ]]; then
   fail "Could not query open PRs (API error)"
-elif [[ "$OPEN_PRS" -gt 3 ]]; then
-  fail "Too many open PRs: ${OPEN_PRS} (limit 3). This repo is saturated."
+elif [[ "$OPEN_PRS" -ge 3 ]]; then
+  fail "Too many open PRs: ${OPEN_PRS} (limit 3). Submitting another would exceed AGENTS.md rule."
 elif [[ "$OPEN_PRS" -ge 2 ]]; then
   warn "Already ${OPEN_PRS} open PRs — approaching limit"
   pass "Open PRs: ${OPEN_PRS}/3"
@@ -129,18 +129,30 @@ fi
 
 # --- Check 4: Repo size ---
 echo "📋 Check 4: Repo size (limit 500MB)"
-SIZE_KB=$(gh api "repos/${REPO}" --jq '.size // empty' 2>/dev/null)
-if [[ -z "$SIZE_KB" || ! "$SIZE_KB" =~ ^[0-9]+$ ]]; then
-  warn "Could not query repo size"
+# Auto-detect local clone — skip size gate if repo already on disk
+LOCAL_CLONE=""
+for candidate in "$HOME/repos/forks/${REPONAME}" "$HOME/repos/forks/${REPO##*/}" "$HOME/.openclaw/workspace/${REPONAME}"; do
+  if [[ -d "$candidate/.git" ]]; then
+    LOCAL_CLONE="$candidate"
+    break
+  fi
+done
+if [[ -n "$LOCAL_CLONE" ]]; then
+  pass "Local clone exists at ${LOCAL_CLONE} — size gate skipped"
 else
-  SIZE_MB=$((SIZE_KB / 1024))
-  if [[ "$SIZE_MB" -gt 500 ]]; then
-    fail "Repo too large: ${SIZE_MB}MB (limit 500MB)"
-  elif [[ "$SIZE_MB" -gt 200 ]]; then
-    warn "Large repo: ${SIZE_MB}MB — clone will be slow"
-    pass "Size: ${SIZE_MB}MB"
+  SIZE_KB=$(gh api "repos/${REPO}" --jq '.size // empty' 2>/dev/null)
+  if [[ -z "$SIZE_KB" || ! "$SIZE_KB" =~ ^[0-9]+$ ]]; then
+    warn "Could not query repo size"
   else
-    pass "Size: ${SIZE_MB}MB"
+    SIZE_MB=$((SIZE_KB / 1024))
+    if [[ "$SIZE_MB" -gt 500 ]]; then
+      fail "Repo too large: ${SIZE_MB}MB (limit 500MB)"
+    elif [[ "$SIZE_MB" -gt 200 ]]; then
+      warn "Large repo: ${SIZE_MB}MB — clone will be slow"
+      pass "Size: ${SIZE_MB}MB"
+    else
+      pass "Size: ${SIZE_MB}MB"
+    fi
   fi
 fi
 
