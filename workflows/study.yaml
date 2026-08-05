@@ -33,7 +33,7 @@ nodes:
       `bash tools/dna-preflight.sh --context study --days 3`
       看最近违反过哪些已有规则，记住这些提醒，本轮避免重犯。
     branches:
-      - condition: TODO 有具体未完成学习任务，或 Track 条目的 Revisit 日期为今天/已逾期
+      - condition: TODO 有具体未完成学习任务，或未完成 Track 条目的 Revisit 日期为今天/已逾期（忽略已完成 [x] 的历史条目）
         next: todo_task
       - condition: 没有具体任务（未来 Revisit 的 Track 仅为追踪元数据），自选模式
         next: entry
