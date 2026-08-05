@@ -315,7 +315,7 @@ nodes:
         写完后：cd ~/.openclaw/workspace/wiki && git add -A && git commit -m "card: 卡片名" && git push
         例：自进化四层模型、mechanism-vs-evolution、agent 信任问题的生态位
       - **学习方法 pattern**（跨领域通用的研究方式）→ 用 add-gradient.sh 写入：
-        `bash ~/.openclaw/workspace/tools/add-gradient.sh "<pattern>" "<行为改变>" --source study`
+        `bash ~/.openclaw/workspace/tools/add-gradient.sh --gradient "<pattern>" --pattern "<pattern-name>" --source study --fix "<行为改变>"`
         例：读代码前先读 test、对比两个项目比单独看一个更有效
         ⚠️ 必须调用 add-gradient.sh，不要直接编辑 beliefs-candidates.md。脚本处理去重+日志。
       不确定的先放 wiki。跨项目洞察必须写 memex——这是知识网络的核心节点。
