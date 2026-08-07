@@ -4,7 +4,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 vi.mock("./db.js", () => {
   const workflows: Record<string, { id: number; name: string; yaml_content: string }> = {};
   const instances: Array<{ id: number; workflow_name: string; current_node: string; status: string; created_at: string; updated_at: string }> = [];
-  const history: Array<{ instance_id: number; node_name: string; branch_taken: string | null; entered_at: string; exited_at: string | null }> = [];
+  const history: Array<{ instance_id: number; node_name: string; branch_taken: string | null; result: string | null; entered_at: string; exited_at: string | null }> = [];
   let nextId = 1;
 
   return {
@@ -47,14 +47,17 @@ vi.mock("./db.js", () => {
       if (inst) inst.status = status;
     },
     addHistory(instanceId: number, nodeName: string) {
-      history.push({ instance_id: instanceId, node_name: nodeName, branch_taken: null, entered_at: "", exited_at: null });
+      history.push({ instance_id: instanceId, node_name: nodeName, branch_taken: null, result: null, entered_at: "", exited_at: null });
     },
-    closeHistory(instanceId: number, nodeName: string, branchTaken: string | null) {
+    closeHistory(instanceId: number, nodeName: string, branchTaken: string | null, result: string | null = null) {
       const h = history.find(h => h.instance_id === instanceId && h.node_name === nodeName && !h.exited_at);
-      if (h) { h.exited_at = "now"; h.branch_taken = branchTaken; }
+      if (h) { h.exited_at = "now"; h.branch_taken = branchTaken; h.result = result; }
     },
     getHistory(instanceId: number) {
       return history.filter(h => h.instance_id === instanceId);
+    },
+    getMostRecentResult(instanceId: number) {
+      return history.filter(h => h.instance_id === instanceId && h.exited_at && h.result).at(-1)?.result;
     },
     getNodeVisitCount(instanceId: number, nodeName: string) {
       return history.filter(h => h.instance_id === instanceId && h.node_name === nodeName).length;
@@ -274,6 +277,15 @@ describe("getAction", () => {
     const action = engine.getAction("linear", "some result");
     expect(action.task).toContain("some result");
     expect(action.previousResult).toBe("some result");
+  });
+
+  it("restores the persisted result when a workflow resumes", () => {
+    engine.define(loopYaml);
+    engine.start("looper");
+    engine.next(undefined, "looper", false, undefined, "Finder unavailable; use offline fallback.");
+    const action = engine.getAction("looper");
+    expect(action.task).toContain("Finder unavailable; use offline fallback.");
+    expect(action.previousResult).toBe("Finder unavailable; use offline fallback.");
   });
 });
 

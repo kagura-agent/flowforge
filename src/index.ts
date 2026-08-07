@@ -110,10 +110,11 @@ program
   .option("-w, --workflow <name>", "Target a specific workflow (when multiple are active)")
   .option("--force", "Override loop detection block")
   .option("--from-node <name>", "Only advance if still at this node (prevents double-advance)")
+  .option("--result <summary>", "Redacted, concise handoff summary for safe resumption (max 2000 chars)")
   .option("--notify", "Output a notification message for the user (e.g. Luna)")
   .action((opts) => {
     try {
-      const result = engine.next(opts.branch, opts.workflow, opts.force, opts.fromNode);
+      const result = engine.next(opts.branch, opts.workflow, opts.force, opts.fromNode, opts.result);
       if (result.skipped) {
         console.log(`\n⏭️ Already advanced past '${result.from}' → currently at '${result.to}'. No action taken.\n`);
         return;

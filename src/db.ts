@@ -38,6 +38,13 @@ db.exec(`
   );
 `);
 
+// Lightweight migration for installations created before node result capture.
+// Results are intentionally concise, redacted summaries—not raw command output.
+const historyColumns = db.prepare("PRAGMA table_info(history)").all() as { name: string }[];
+if (!historyColumns.some(column => column.name === "result")) {
+  db.exec("ALTER TABLE history ADD COLUMN result TEXT");
+}
+
 // --- Workflow queries ---
 
 export function upsertWorkflow(name: string, yaml: string) {
@@ -106,10 +113,10 @@ export function addHistory(instanceId: number, nodeName: string) {
   ).run(instanceId, nodeName);
 }
 
-export function closeHistory(instanceId: number, nodeName: string, branchTaken: string | null) {
+export function closeHistory(instanceId: number, nodeName: string, branchTaken: string | null, result: string | null = null) {
   db.prepare(
-    "UPDATE history SET exited_at = datetime('now'), branch_taken = ? WHERE instance_id = ? AND node_name = ? AND exited_at IS NULL"
-  ).run(branchTaken, instanceId, nodeName);
+    "UPDATE history SET exited_at = datetime('now'), branch_taken = ?, result = COALESCE(?, result) WHERE instance_id = ? AND node_name = ? AND exited_at IS NULL"
+  ).run(branchTaken, result, instanceId, nodeName);
 }
 
 export function getNodeVisitCount(instanceId: number, nodeName: string): number {
@@ -121,13 +128,21 @@ export function getNodeVisitCount(instanceId: number, nodeName: string): number 
 
 export function getHistory(instanceId: number) {
   return db.prepare(
-    "SELECT node_name, branch_taken, entered_at, exited_at FROM history WHERE instance_id = ? ORDER BY id"
+    "SELECT node_name, branch_taken, result, entered_at, exited_at FROM history WHERE instance_id = ? ORDER BY id"
   ).all(instanceId) as {
     node_name: string;
     branch_taken: string | null;
+    result: string | null;
     entered_at: string;
     exited_at: string | null;
   }[];
+}
+
+export function getMostRecentResult(instanceId: number): string | undefined {
+  const row = db.prepare(
+    "SELECT result FROM history WHERE instance_id = ? AND exited_at IS NOT NULL AND result IS NOT NULL AND trim(result) <> '' ORDER BY id DESC LIMIT 1"
+  ).get(instanceId) as { result: string } | undefined;
+  return row?.result;
 }
 
 export function cleanupStaleInstances(staleHours: number): { id: number; workflow_name: string; current_node: string; updated_at: string }[] {

@@ -73,7 +73,7 @@ export function status(workflowName?: string) {
   };
 }
 
-export function next(branch?: number, workflowName?: string, force?: boolean, fromNode?: string) {
+export function next(branch?: number, workflowName?: string, force?: boolean, fromNode?: string, result?: string) {
   const inst = requireActiveInstance(workflowName);
 
   // Guard: if fromNode is specified, only advance if we're still at that node.
@@ -165,7 +165,10 @@ export function next(branch?: number, workflowName?: string, force?: boolean, fr
   }
 
   // Close current history entry, move to next node, open new history entry
-  db.closeHistory(inst.id, inst.current_node, branchTaken);
+  // Store only a bounded, deliberately redacted handoff summary. Raw command
+  // output belongs in a purpose-built artifact, not the workflow database.
+  const resultSummary = result?.trim().slice(0, 2000) || null;
+  db.closeHistory(inst.id, inst.current_node, branchTaken, resultSummary);
   db.updateInstanceNode(inst.id, nextNode);
   db.addHistory(inst.id, nextNode);
 
@@ -239,9 +242,10 @@ export function getAction(workflowName?: string, previousResult?: string): FlowA
   const node = wf.nodes[inst.current_node];
   if (!node) throw new Error(`Node '${inst.current_node}' not found`);
 
+  const resumeResult = previousResult ?? db.getMostRecentResult(inst.id);
   let task = node.task;
-  if (previousResult) {
-    task = `${task}\n\nPrevious result:\n${previousResult}`;
+  if (resumeResult) {
+    task = `${task}\n\nPrevious node result (redacted handoff):\n${resumeResult}`;
   }
 
   if (node.terminal) {
@@ -251,7 +255,7 @@ export function getAction(workflowName?: string, previousResult?: string): FlowA
       workflowName: inst.workflow_name,
       node: inst.current_node,
       task,
-      previousResult,
+      previousResult: resumeResult,
     };
   }
 
@@ -289,7 +293,7 @@ export function getAction(workflowName?: string, previousResult?: string): FlowA
     node: inst.current_node,
     task,
     branches: node.branches,
-    previousResult,
+    previousResult: resumeResult,
   };
 }
 
@@ -306,7 +310,7 @@ export function advanceWithResult(result: string, workflowName?: string): FlowAc
   }
 
   // Advance to next node
-  const nextResult = next(branch, workflowName);
+  const nextResult = next(branch, workflowName, false, undefined, result);
 
   if (nextResult.terminal) {
     return {
@@ -319,6 +323,5 @@ export function advanceWithResult(result: string, workflowName?: string): FlowAc
   }
 
   // Get the next action
-  return getAction(workflowName, result);
+  return getAction(workflowName);
 }
-
