@@ -32,6 +32,10 @@ nodes:
       **DNA Preflight**（不能跳过）：
       `bash tools/dna-preflight.sh --context study --days 3`
       看最近违反过哪些已有规则，记住这些提醒，本轮避免重犯。
+
+      **TODO 分支日期门控**（不能跳过）：
+      `bash ~/.openclaw/workspace/study/followup-status.sh`
+      仅当其输出存在到期/逾期的未完成 Track，或 TODO 有明确未完成学习动作时，才能选分支 1；未来 Revisit 日期只是追踪元数据，必须选分支 2。
     branches:
       - condition: TODO 有具体未完成学习任务，或未完成 Track 条目的 Revisit 日期为今天/已逾期（忽略已完成 [x] 的历史条目）
         next: todo_task
@@ -213,7 +217,7 @@ nodes:
          - `bash ~/.openclaw/workspace/wiki/search.sh "<关键词>" --limit 5`（hybrid: semantic + keyword，覆盖 RAG 失效场景）
          - **backlink 扩展**：对命中的卡片跑 `cd ~/.openclaw/workspace/wiki && MEMEX_HOME=. memex backlinks <slug>`，沿链接读 1-2 个关联卡片
          - 找到相关笔记和卡片就先读，带着已有认知进入
-      1. 如果是新项目：clone，读 README、架构文档、核心模块
+      1. 如果是新项目：以有界等待 clone，读 README、架构文档、核心模块；clone 停滞时停止它，改用 `gh api` 读取 git tree、测试文件和源码，并在笔记中标明 API 证据边界
       2. 如果是已关注项目：读新变化的代码，理解设计决策
       3. **先读 test 文件**：test/ 目录往往比文档更准确地展示 API 用法和边界
       4. **扫 Issues 找批评者**（⚠️ 高效捷径，不可跳过）：
