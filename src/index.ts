@@ -83,7 +83,9 @@ program
       }
       const { id, node } = engine.start(workflow);
       console.log(`Started instance #${id} at node '${node}'.`);
-      printStatus();
+      // Target the instance just created. An unscoped status call fails whenever
+      // other workflows are active, even though this start itself succeeded.
+      printStatus(workflow);
     } catch (e: any) {
       console.error(`Error: ${e.message}`);
       process.exit(1);
