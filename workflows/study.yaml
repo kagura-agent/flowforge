@@ -81,6 +81,8 @@ nodes:
         如果选 followup，只做到期项目，不扩展。
       - **全部锁定**：scout ≥3 AND apply ≥3 AND followup ≥4 → **本轮直接结束**。不强迫进入任何模式。
         记录到 memory：「Study 全模式饱和，跳过」。
+      - **软饱和**（study-saturation.sh 输出「SOFT SATURATION」）：今日已侦察+快速扫描（或距上次侦察 <3d）+ apply backlog 空 + followup 锁定 → 无非伪造产出可做。
+        走「全模式饱和」分支（branch 5）直接结束，记录软饱和，不强迫再扫第三遍。
     branches:
       - condition: "侦察新东西"
         next: scout
