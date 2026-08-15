@@ -237,6 +237,7 @@ nodes:
       6. **入口预检**（不可跳过）：
          `bash tools/scout-precheck.sh <target-project>`
          如果 EXISTING + deep (>100L) + <7d ago → 你在重复劳动。要么找新角度要么换目标。
+         但 EXISTING + 显著变化（stars 暴涨 / pushed_at 晚于上次验证 / 新 issues）→ 做 **delta-read** 而非跳过：`gh api repos/<repo>/commits?since=<上次验证日期>` + issues 找批评者；有实质变更则追加笔记并更新 status（08-15 实证：pi-from-scratch 88→982⭐ 是营销驱动增长 + 1 个真实 protocol 修复，delta 比 re-read 价值高得多）。
 
       **🚩 Red Flags — 如果出现以下症状，你在浏览不是在深读：**
       - 笔记里大段引用 README 但没有自己的分析 → 你在搬运不是在理解
