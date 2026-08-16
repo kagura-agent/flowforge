@@ -131,6 +131,13 @@ program
       }
       if (result.terminal) {
         console.log(`\n✅ ${result.from} → (end) — Workflow complete!\n`);
+        // Terminal nodes may carry a final task (e.g. review write_log). The instance
+        // auto-closes on arrival, so surface the task here or it is lost forever.
+        if (result.task && result.task.trim()) {
+          console.log(`📋 收尾任务（实例已自动关闭，以下任务仍需执行）：\n`);
+          console.log(result.task);
+          console.log(`\n`);
+        }
       } else {
         console.log(`\n${result.from} → ${result.to}${result.branchTaken ? ` (${result.branchTaken})` : ""}\n`);
         printStatus(opts.workflow);
