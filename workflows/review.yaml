@@ -162,6 +162,12 @@ nodes:
          - 取代手动维护 L1.md，保证指针始终指向最相关的笔记
          - ⚠️ 如果因并发内存压力失败，不阻塞 review 流程，下个周期补上
 
+      9. **Wiki 落盘检查（每次 review 都做，双查）**：
+         - 运行 `cd ~/.openclaw/workspace/wiki && git status --short && git diff --stat`
+         - **不能只看文件列表**：必须同时看完整 diff stat（2026-08-18 教训：只看了 .recall-log 漏了 L1.md）
+         - **L1.md 是 regen 自动产物，落盘前专门确认**：若 L1.md 有改动，与 .recall-log 一起 commit + push，不得遗漏
+         - 发现未提交产物 → 立即 commit + push，禁止带着脏状态进入 write_log
+
       ⚠️ 编辑文件时：先 read 获取精确内容，再 edit。不要凭记忆猜 oldText。
       每次改动都 git diff --stat 确认，不要误删有价值的信息。
       不设硬行数上限——质量好就留，冗余了就清。
