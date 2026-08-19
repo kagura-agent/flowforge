@@ -46,6 +46,10 @@ nodes:
     task: |
       执行 TODO 里指定的学习任务。做完后删掉该 TODO 条目。
       汇报学习结果。
+
+      **Calibration 清债**（不可跳过）：
+      `bash tools/calibration-log.sh due` — 有到期预测先验证（`calibration-log.sh verify <id> --outcome correct|wrong|partial`），
+      再执行本节点任务。到期项 >10 条时验证优先于新预测（08-19 实证：48 条到期未验证，新预测仍在追加 → 校准闭环失效）。
     next: note
 
   entry:
