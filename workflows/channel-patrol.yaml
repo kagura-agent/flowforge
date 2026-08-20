@@ -26,6 +26,30 @@ nodes:
       只检查有 cron 的 channel，不检查 #general 等非工作 channel。
     branches:
       - condition: "完成"
+        next: celebrate_check
+
+  celebrate_check:
+    task: |
+      🔔 **Celebrate 检测（08-21 落地，celebrate 盲区第 6 天）**
+      merge/完成信号 → 必须发庆祝 meme，不再只发 facepalm/thinking。
+
+      1. 检测近 24h 完成信号：
+      ```
+      export https_proxy=http://127.0.0.1:1083
+      # ① PR merged by kagura-agent 近 24h
+      gh search prs --author kagura-agent --state merged --merged:>=$(date -u -d '24 hours ago' +%Y-%m-%dT%H:%M:%SZ) --json number,title,repositoryUrl --jq '.[] | "\(.repositoryUrl) #\(.number) \(.title)"' 2>&1
+      # ② 当天 memory 里的完成/合并信号
+      grep -iE "merged|✅|完成|闭环" memory/$(date +%Y-%m-%d).md 2>/dev/null | head -5
+      # ③ cove/channel 任务完成信号（如有记录）
+      ```
+
+      2. 判定与动作：
+      - **有任何信号** → 必须 `memes send happy "🎉 <信号摘要>"`（happy 近 3 次已用过则换 celebrate/rocket/wow，看 meme-tracker.json history）。发送目标：信号对应 channel（PR → 该 repo 的 channel），无明确归属 → 当前巡检 channel。发送后把「已庆祝」写进 memory。
+      - **无信号** → 一行说明 "无 celebrate 信号"，跳过。
+
+      3. 把 celebrate 结果写进 report 的「需关注」区（发了什么/为什么）。
+    branches:
+      - condition: "完成"
         next: manage_todo
 
   manage_todo:
