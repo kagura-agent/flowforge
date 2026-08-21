@@ -5,7 +5,12 @@ start: audit
 nodes:
   audit:
     task: |
-      **Step 0: FlowForge 僵尸清理**
+      **Step 0: 检查是否已有 active daily-audit 实例**
+      运行 `flowforge active`。若已有 daily-audit 实例：不要 `flowforge start` 新实例（会并发重复审计），
+      用 `flowforge status -w daily-audit` 看停在哪个节点，从该节点继续推进。
+      （08-21 教训：06:00 fix 已 commit 但实例停在 audit 节点、propose 未执行，10:54 补完时发现）
+
+      **Step 0b: FlowForge 僵尸清理**
       运行 `flowforge cleanup --stale-hours 4` 自动完结卡死超过 4 小时的 workflow 实例。
       记录清理了几个、哪些 workflow。
 
@@ -55,6 +60,7 @@ nodes:
       等 Luna 确认后再执行。不要在这一步做任何实际改动。
 
       **最后：创建 evolve workflow 待执行实例**
-      运行 `cd ~/.openclaw/workspace/flowforge && node bin/flowforge.js start evolve`
+      先 `flowforge active` 检查是否已有 pending 的 evolve 实例；无则运行
+      `cd ~/.openclaw/workspace/flowforge && node bin/flowforge.js start evolve`
       这会创建一个 pending 的 evolve 实例，等 Luna 确认后推进。
     terminal: true
