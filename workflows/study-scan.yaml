@@ -1,0 +1,229 @@
+name: study-scan
+description: '学习扫描层 — 只做侦察选题 + 建 task，不做深入研究。替代 study-loop 循环。
+
+  架构定位（2026-08-21 迁移设计，与 work-scan/workloop-exec 对称）：
+  - 扫描层（本 workflow）：饱和门控 + 侦察/快速扫描/跟进 + TODO 学习任务检查
+    → 输出 = 一个 Cove task（「研究: X」/「跟进: X」/「应用: X」/「学习: X」）
+  - 执行层：study-exec.yaml（task 级），由 Cove task heartbeat 驱动
+  - 原版 study.yaml 保留不动（单轮循环模式），本文件是扫描层变体
+
+  核心原则：task = 一个学习工作单元（研究/应用/学习任务），有明确产出物
+  （wiki 笔记/card/工具改动），不是状态跟踪器。扫描层不深入任何研究。
+  '
+start: saturation_gate
+
+nodes:
+  saturation_gate:
+    task: |
+      **饱和噪音门控**（自动跳过重复空转）：
+      `bash tools/study-saturation-gate.sh`
+      如果今天 memory 里已有 ≥2 次「全模式饱和」记录，直接跳过本轮。
+      原理：扫描太频繁时每轮都是空转，建不出有价值的 task（06-15 实测）。
+    branches:
+      - condition: "OPEN — 继续学习扫描"
+        next: align
+      - condition: "SATURATED — 今天已饱和，跳过"
+        next: skip_saturated
+
+  skip_saturated:
+    task: |
+      今日 study 已饱和（≥2 次全模式跳过）。
+      **只写一行到 memory**：`Study saturation gate: skipped (Nth today)`
+      不做任何其他操作。
+      **最终输出必须是 NO_REPLY**（不要向 channel 发任何消息）。
+    terminal: true
+
+  align:
+    task: |
+      **读准则**：cat ~/.openclaw/workspace/wiki/study/guide.md
+      理解学习方向和原则。然后读 TODO.md「📚 学习」section，看有没有指定任务。
+
+      **DNA Preflight**（不能跳过）：
+      `bash tools/dna-preflight.sh --context study --days 3`
+
+      **TODO 分支日期门控**（不能跳过）：
+      `bash ~/.openclaw/workspace/study/followup-status.sh`
+      仅当其输出存在到期/逾期的未完成 Track，或 TODO 有明确未完成学习动作时，才能选分支 1；未来 Revisit 日期只是追踪元数据，必须选分支 2。
+
+      **⚠️ task 语义**：本扫描层只建「工作型」学习 task（有明确产出物），
+      不建状态跟踪器。task = 研究一个课题 / 应用一个洞察 / 完成一个学习任务，
+      done 标准 = 产出物 commit（wiki 笔记/card/工具改动 + 验证）。
+    branches:
+      - condition: TODO 有具体未完成学习任务，或未完成 Track 条目的 Revisit 日期为今天/已逾期
+        next: todo_task
+      - condition: 没有具体任务（未来 Revisit 的 Track 仅为追踪元数据），自选模式
+        next: entry
+
+  todo_task:
+    task: |
+      **TODO 学习任务 → 建 Cove task**（不在这里执行）：
+      1. 读 TODO.md「📚 学习」section 找出未完成任务
+      2. 每个任务建一个 Cove task：
+         ```
+         cove_task(action: create, channelId: "1539527170404122624", title: "学习: <任务名>", assigneeId: "1522505958230589440", description: "<TODO 任务详情 + 产出物定义>", heartbeatIntervalMs: 7200000)
+         ```
+      3. 建完所有 → 到 create_study_task 的分支判断（若还有其他课题一起建）
+      4. 已建过 task 的 TODO 条目（#study 频道已有对应 task）→ 跳过，不重复建
+
+      汇报建了哪些学习 task。
+    next: create_study_task
+
+  entry:
+    task: |
+      选择本轮扫描模式（**不允许空转**，每轮必须有产出）：
+      1. **侦察**：找新项目、新趋势、新方向（适合距上次侦察 ≥3 天）
+      2. **快速扫描**：10 分钟 GitHub trending + HN 速览，只记标题和一句话判断（适合日常保持手感）
+      3. **跟进**：已关注项目有没有新动态
+      4. **应用**：把之前学到的东西用在自己身上（改工具、改流程、验证假设）→ 建「应用: X」task
+
+      **决策辅助**：先跑 `bash ~/.openclaw/workspace/tools/study-saturation.sh`，一条命令看清饱和状态和推荐模式。
+      **跟进前置检查**：`bash ~/.openclaw/workspace/tools/followup-status.sh`——看有无到期项目。0 items due → 不要选跟进。
+
+      **⛔ 饱和上限（硬性规则，同原版）**：
+      - 同一天 quick_scout ≥ 3 次 → 禁止再选快速扫描
+      - 连续 2 天每天 ≥3 次 quick scan → 生态稳定期，降频到每天 max 1 次
+      - 同一天 apply ≥ 3 次 → 禁止再选应用
+      - 同一天 scout（侦察 + 快速扫描合计）≥ 3 次 → 禁止再选侦察或快速扫描
+      - 同一天 followup ≥ 4 次 → 禁止再选跟进
+      - 周末降级：优先选 apply 或 scout
+      - **全部锁定** → 本轮直接结束（记「Study 全模式饱和，跳过」）
+      - **软饱和** → 直接结束，不强迫
+
+      **⚠️ 扫描层选择的是「发现」不是「执行」**：选好模式后，发现课题 → 建 task；
+      不在本轮 thread 里做深入研究。
+    branches:
+      - condition: "侦察新东西"
+        next: scout
+      - condition: "快速扫描"
+        next: quick_scout
+      - condition: "跟进已关注项目"
+        next: followup
+      - condition: "应用已有知识"
+        next: apply_scan
+      - condition: "全模式饱和，直接结束"
+        next: done
+
+  scout:
+    task: |
+      侦察 agent 生态的动向（只发现，不深读）：
+      0. **先搜已有知识**（不可跳过）：
+         - `bash ~/.openclaw/workspace/wiki/search.sh "<本轮关键词>" --limit 5`
+         - 搜到相关笔记就先读，避免重复研究已知项目
+      1. 看 GitHub trending（AI/agent 相关）、HN、Twitter/X 最近讨论
+         **优先用 GitHub API search**（`gh api search/repositories?q=topic:ai-agent+created:>YYYY-MM-DD&sort=stars`）
+         **GitHub 结果必须过 spam filter**：`gh api ... --jq '.items' | tools/spam-filter.sh --json | jq -r '.[] | select(.verdict == "CLEAN") | [.repo, .stars, .description] | @tsv'`
+         **HN 用 Algolia API**：`bash tools/hn-scan.sh`（默认 7 天 ai+agent 话题）
+      2. 已关注项目有没有大的方向变化
+      3. 有没有新冒出来的项目或趋势
+      4. 核心问题：**业界在做 agent 的什么？钱和注意力往哪里流？**
+      5. **看人**：有没有值得研究的高效贡献者？
+      6. **饱和信号检测**：前 3 个搜索结果都已有 wiki 笔记 → 停止，写趋势级判断（不是找新项目）
+
+      **🚩 Red Flags — 走形式信号**（同原版）：
+      - 列出 10+ 项目但每个只写一行判断 → 数量凑产出
+      - 30 分钟还在翻第 4 页 → 该深入前 3 个
+      - 没有一个项目让你意外 → 只看了符合预期的东西
+
+      7. **候选预检**：`bash tools/scout-precheck.sh <candidate1> <candidate2> ...`
+         ⛔ 全部 EXISTING → 换目标或转 followup
+
+      **汇报 + 判定**：发现值得深读的 → 列出来（项目/贡献者/一句话为什么值得），走 create_study_task 建 task。
+    branches:
+      - condition: "发现了值得深入研究的方向或项目/贡献者"
+        next: create_study_task
+      - condition: "没有新发现，跟进已关注项目"
+        next: followup
+      - condition: "什么都没有"
+        next: done
+
+  quick_scout:
+    task: |
+      10 分钟快速扫描，不求深入，只求广度：
+      0. **先搜已有知识**：`bash ~/.openclaw/workspace/wiki/search.sh "agent trending" --limit 3`
+      1. GitHub trending today（AI/agent 前 10）— 记项目名 + stars + 一句话
+         **GitHub API search** + spam filter（同 scout）
+      2. HN 用 `bash tools/hn-scan.sh --days 3 --min-points 10`
+      3. 每个发现只写一行判断："值得深入" / "已知" / "不相关"
+      4. **饱和判断**：前 3 个结果都是"已知" → 停止，写趋势总结
+      5. 有 "值得深入" 的 → 走 create_study_task 建 task「研究: X」
+
+      总耗时控制在 10 分钟内。汇报扫描结果。
+    branches:
+      - condition: "发现了值得深入研究的"
+        next: create_study_task
+      - condition: "没发现新项目，转 done"
+        next: done
+
+  followup:
+    task: |
+      跟进已关注项目的新动态（只发现，不深读）：
+      0. **TTL 审计**：`bash ~/.openclaw/workspace/study/audit-targets.sh` — 清理超 TTL 的 stale 条目
+      0b. **社区健康检查**：对要深入跟进的项目跑 `bash ~/.openclaw/workspace/study/tracking-community.sh <owner/repo>`
+      0c. **先搜已有知识**：`bash ~/.openclaw/workspace/wiki/search.sh "<项目名>" --limit 5`
+      1. 优先跟进到期的 tracking items，其次读 wiki/projects/ 找活跃项目
+      2. 选 2-3 个，检查最近变化：
+         - 大的 PR 被 merge（架构重构、新 feature）
+         - 重要的 issue 讨论（设计决策、方向争论）— **优先找批评性 issue**
+         - 新的 release
+      3. 有没有跟我们方向相关的新信号？
+      4. **更新 targets.md**：`bash ~/.openclaw/workspace/study/tracking-update.sh <project-name> [--stars N] [--notes "..."]`
+
+      汇报哪些项目有值得深入的新动态 → 走 create_study_task 建 task「研究: X」。
+    branches:
+      - condition: "有项目有值得学习的新动态"
+        next: create_study_task
+      - condition: "没发现新动态，转 done"
+        next: done
+
+  apply_scan:
+    task: |
+      **应用模式 → 建「应用: X」task**（不在这里执行改动）：
+      1. 读 `cat ~/.openclaw/workspace/study/unapplied.md`（聚合的待应用洞察列表）+ IDEAS.md
+      1b. 读 `tail -80 ~/.openclaw/workspace/wiki/projects/self-evolving-observations.md`（pipeline 健康检查）
+      2. 选 1 个最值得应用的洞察
+      3. 建 Cove task：
+         ```
+         cove_task(action: create, channelId: "1539527170404122624", title: "应用: <洞察名>", assigneeId: "1522505958230589440", description: "<洞察内容 + 应用方向（改工具/改流程/验证假设）+ 产出物定义>", heartbeatIntervalMs: 7200000)
+         ```
+      4. 汇报选了哪个洞察、为什么。
+
+      ⛔ 如果 unapplied.md 是空的且没有可应用的 backlog → 不建 task，转 done。
+    branches:
+      - condition: "有可应用的洞察，已建 task"
+        next: done
+      - condition: "无可应用 backlog"
+        next: done
+
+  create_study_task:
+    task: |
+      **把发现的课题建成 Cove task**（扫描层核心产出，不在这里执行）：
+
+      对每个发现（可能多个）：
+      1. 确定 task 类型和标题：
+         - 新项目/方向深读 → 「研究: <项目/方向名>」
+           description: 项目链接 + 为什么值得（一句话）+ 产出物（wiki 笔记/card，commit + push 到 kagura-agent/wiki）
+         - 高效贡献者 → 「研究贡献者: <人名>」
+           description: 分析其 merged PR 模式 + 产出物（wiki 卡片）
+         - 已关注项目新动态 → 「跟进: <项目名> <动态>」
+           description: 动态内容 + 产出物（delta 笔记）
+         - TODO 学习任务 → 「学习: <任务名>」
+           description: 任务详情 + 产出物
+      2. 用 cove_task 创建：
+         ```
+         cove_task(action: create, channelId: "1539527170404122624", title: "<类型>: <课题>", assigneeId: "1522505958230589440", description: "<详情 + 产出物定义 + 执行路径：heartbeat 触发后 in_progress → study-exec.yaml（deep_read/apply → note → reflect）→ 产出物 commit 后 done>", heartbeatIntervalMs: 7200000)
+         ```
+         assigneeId = Kagura 自己的 user id（1522505958230589440）
+         heartbeat 2h
+      3. 建完一个就检查还有没有下一个。全部建完 → done。
+      4. 记录 task_id 到 memory/当天日期.md
+
+      ⚠️ 这里只建 task，不深入。研究由 task 的 heartbeat 驱动（in_progress → study-exec 执行层）。
+    next: done
+
+  done:
+    task: |
+      扫描层本轮完成。记录到 memory/当天日期.md：
+      - 扫描模式 + 发现
+      - 建了哪些 task（课题 → task_id）
+      汇报本轮成果。如果没建任何 task、无新发现 → NO_REPLY。
+    terminal: true

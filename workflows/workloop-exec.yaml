@@ -1,0 +1,463 @@
+name: workloop-exec
+description: '打工执行层 — 一个 Cove task 对应一个实例，只做实现不做选题。由 task heartbeat 驱动。
+
+  架构定位（2026-08-21 迁移设计）：
+  - 扫描层：work-scan.yaml（选题 + 建 task，替代 work-loop cron 完整循环）
+  - 执行层（本 workflow）：study → plan → implement → submit → verify → reflect
+  - 生命周期：task in_progress（启动本实例）→ PR 提交后 in_review → merged 后 done
+  - 原版 workloop.yaml 保留不动（单轮全循环模式），本文件是 task 级执行变体
+
+  核心原则：一轮 = 一个 issue = 一个 PR。Cove task 管生命周期，FlowForge 管执行细节。
+  '
+start: study
+
+nodes:
+  study:
+    task: |
+      **研究选中 issue 并确认 task 上下文。**
+
+      **Step 0: Task 上下文读取（每次必做）**
+      - 从 task description / thread 首条消息拿 issue 链接（格式：https://github.com/<owner/repo>/issues/<n>）
+      - 确认 task 状态是 in_progress（若不是，先用 cove_task update 转 in_progress）
+      - 提取 owner/repo 和 issue number
+
+      **Step 1: Issue 完整上下文阅读（不能跳过，不能只看 issue body）**：
+      `gh issue view <number> --repo <owner/repo> --json state,title,body,comments`
+      a. **检查 state** — 如果 issue 已 CLOSED → 立即走 reject_and_return，不做任何操作
+      b. **读所有 comments** — 可能有新的分析、方向变更、maintainer 结论、其他人的 fix
+      c. **检查我自己的历史评论** — 如果我已经 withdraw/放弃过 → **绝对不重新 claim**，走 reject_and_return
+      d. **检查是否有人提出这不是本 repo 能修的**(上游问题) → 如果有,评估是否同意再决定
+
+      **Step 2: 必须先读笔记**（不能跳过）:
+      a. cat ~/.openclaw/workspace/wiki/projects/<项目名>.md — wiki 笔记
+      b. 如果文件不存在,说明这是第一次打这个 repo,要特别小心
+      c. 笔记里有「Contribution Flow」section?有 → 按要求执行（如 claim issue、等 assign 等）
+      d. 如果要求先 claim issue → 确认没有历史交互才发新 claim
+
+      **Step 3: 搜跨项目知识（两步检索,不能跳过）**:
+      a. 从 issue 标题/描述提取 2-3 个关键词
+      b. cd ~/.openclaw/workspace/wiki && MEMEX_HOME=. memex search "<关键词>"
+      c. 搜到相关卡片 → 读一下,看有没有已有洞察能指导实现
+      d. **backlink 扩展**:对每个命中的卡片跑 `MEMEX_HOME=. memex backlinks <slug>`,拉出关联卡片
+
+      **Step 4: 读 CONTRIBUTING.md**,重点关注 PR 流程要求(changeset?CLA?签名?)、代码风格、测试要求。
+
+      **Step 5: 方向存活检查**（check-before-invest）:
+      a. 这个 issue 涉及的模块/依赖/方向还在项目 roadmap 上吗?
+      b. `git log --oneline -10 --<相关目录>` 看最近是否有大规模重写或删除
+      c. 涉及第三方依赖?查是否有安全事件或被弃用的讨论
+      d. 如果方向已死 → 走 reject_and_return
+
+      **Step 6: 竞争 PR 结构化检查（不能跳过）**：
+      `bash tools/competing-pr-check.sh <owner/repo> <issue-number>`
+      脚本退出 1 → 走 reject_and_return。退出 0 → 继续。
+
+      **Step 7: 确认根因 + 查近期修复**:
+      `git log --oneline -20 -- <相关文件>` 看有没有近期 commit 已经修了这个问题
+      - 如果发现已修但 issue 未关闭 → 在 issue 下评论指出，然后走 reject_and_return
+
+      **Step 8: 提 PR 前 5 问**(全过才提):
+      a. 这个 PR 只解决一个问题吗?
+      b. 上游没有已有修复或竞争 PR 吗?
+      c. 我读了 CONTRIBUTING.md 和最近的 merge 模式吗?
+      d. 我能验证这个修复吗?
+      e. 这个 repo 我的 open PR ≤ 3 吗?(超过就停)
+
+      汇报你的理解和实现计划,包含从笔记和维护者 PR 中学到的关键信息。
+
+      **⬇️ STUDY REPORT(必须输出,缺项 = study 未完成)⬇️**
+      ```
+      REPO: <owner/repo>
+      ISSUE: #<number> - <标题>
+      TASK_ID: <cove task id>
+      CONTRIBUTING 要求: <逐条列出>
+      Contribution Flow: <claim required / no special flow / 其他>
+      测试命令: <具体命令>
+      根因: <一句话>
+      改动范围: <哪些文件、改什么>
+      风险: <可能踩的坑>
+      ```
+    branches:
+      - condition: issue 可做,计划明确
+        next: plan
+      - condition: issue 不合适(上游问题/竞争PR/太复杂/已关闭)
+        next: reject_and_return
+
+  reject_and_return:
+    task: |
+      **记录拒绝原因、取消 task、结束本轮。**
+
+      Study 阶段判定 issue 不合适时：
+
+      1. 记录拒绝到 finder rejection cache（防止下次 work-scan 又选中同一个）：
+      ```
+      bash ~/.openclaw/workspace/tools/finder-reject.sh add <owner/repo#number> "<简短拒绝原因>"
+      ```
+
+      2. 更新 Cove task 状态为 cancelled：
+      ```
+      cove_task(action: update, taskId: <TASK_ID>, status: "cancelled")
+      ```
+      如果 task 已 cancelled/close 就不重复操作。
+
+      3. 记录到 memory/当天日期.md，说明拒绝原因。
+
+      这是 terminal 节点 — 后续由 work-scan 重新选题。
+    terminal: true
+
+  plan:
+    task: |
+      **Plan-first phase** - 写出具体实现计划,内置 review gate,一步到位。
+
+      基于 study 阶段的理解,产出一份结构化计划:
+
+      1. **变更清单**:列出要改的文件和函数,每个写一句话说明改什么
+      2. **实现方法**:用什么方法解决?有没有已有的 pattern 可以参考(从 wiki 笔记或 memex 搜到的)?
+      3. **边界情况**:这个改动可能影响什么?有没有 ripple effect?
+      4. **测试策略**:怎么验证?改哪些测试?需要加新测试吗?
+      5. **风险点**:什么可能出错?maintainer 可能不同意什么?
+
+      **判断标准**:
+      - 一行修复(typo、import、配置)→ 计划可以很短,2-3 句话
+      - 多文件改动 / 涉及接口变更 → 必须详细列出每个文件的变更
+      - 不确定的地方用 `[?]` 标记,在 implement 时优先验证
+
+      **防 supersede 检查**(过一遍 wiki/cards/pr-superseded-lessons.md 检查清单 Phase 2+3):
+      - 我在修根因还是绕症状?能否在源头拦截?
+      - Scope 是否最小?只影响一个 provider/platform 就只改那里
+      - 保持向后兼容 defaults?新行为 opt-in?
+      - 测试策略覆盖 happy path + error/teardown path?
+
+      **Plan Review Gate**(内置,不允许自评审)
+
+      计划写完后,立即用 subagent 独立评审:
+
+      1. 把计划(变更清单 + 实现方法 + 测试策略)整理为简洁文本
+      2. spawn 一个 subagent(mode=run),给它以下指令:
+         你是一个代码审查员。评审以下实现计划,给出 1-10 分并附简短理由。
+         评审维度: Scope 最小化? 修根因? 测试覆盖? 风险/遗漏? 符合 maintainer 偏好?
+         分数 < 7 → 指出具体问题。分数 >= 7 → 回复 APPROVED。
+      3. subagent 只看到计划文本,不看 study/context — 强制独立判断
+      4. 结果处理:
+         - APPROVED (>=7) → 汇报计划,走 implement
+         - NOT APPROVED (<7) → 根据反馈修改计划,重新 review(同一轮内循环,不退出 node)
+      5. Trivial fix 例外:如果是一行修复(typo/import/config),可以跳过 subagent review
+
+      汇报最终计划和 review 分数。如果写计划过程中发现 issue 比想象的复杂或方向有问题,可以走 reject_and_return。
+    branches:
+      - condition: 计划通过 review (APPROVED),可以开始实现
+        next: implement
+      - condition: 发现问题,需要放弃这个 issue
+        next: reject_and_return
+
+  implement:
+    task: |
+      **按照 plan 阶段的计划实现(参照变更清单逐项执行):**
+
+      **⚡ Stale PR Recovery（implement 前第一步）**：
+      `bash tools/stale-pr-check.sh <owner/repo> <issue-number>`
+      退出 10 → 我的 PR 已存在且 CI 绿 → **直接走 Branch 3 fast-path**，不重做实现。
+      退出 11 → 我的 PR 存在但 CI 红 → fix mode，检查 CI 失败原因并修复，不从头实现。
+      退出 0 → 无已有 PR → 继续正常实现流程。
+
+      **⚠️ 竞争 PR 复查（stale-pr-check exit 0 时必做）**：
+      `bash tools/competing-pr-check.sh <owner/repo> <issue-number>`
+      退出 1 → 已被抢先，走 cancel 分支。
+
+      0. **Claude Code CLI 分工**:
+         - 所有代码实现必须在目标 repo/worktree 内以 Claude Code CLI 同步执行，且不得直接手写实现:
+           `cd <repo> && claude --print --permission-mode bypassPermissions "<task>"`
+         - CLI 必须同步等待最终输出；记录退出码、最终 stdout 和本地验证证据后才能推进 workflow
+         - task 必须包含 Claude Code 看不到的上下文:
+           a. 相关的 issue 讨论和 reviewer 反馈
+           b. 类似 bug 的已有修复(可作为参考模式)
+           c. 项目架构和代码位置的关键信息
+           d. maintainer 偏好(从 wiki 读)
+         - **task 开头必须加 surgical constraints**:
+           CONSTRAINTS: 1) Surgical changes only - every changed line must trace to the issue. Do not improve adjacent code/comments/formatting. Preserve original code structure, variable names, and comments exactly as-is unless the fix requires changing them. 2) Match existing style. 3) No speculative features, no while-I-am-here refactors. Do not rename variables, add validation, or restructure functions beyond what the fix requires. 4) Clean up only orphans YOUR changes created. 5) Aim for the smallest possible diff that correctly fixes the issue.
+         - **task 末尾必须加验证指令和边界约束**:
+           "Before committing: 1) grep for all test files that import/mock the interfaces you changed, update their mocks. 2) Run the project's test/lint commands. 3) git diff --stat to confirm no files were missed.
+           BOUNDARY: Only commit locally. Do NOT push, do NOT create PRs, do NOT run gh pr commands. Push and PR creation happen in the submit node."
+         - 无论改动大小，都不得直接手写代码；必须委托 Claude Code CLI
+
+      1. **必须取得同步 CLI 的完成结果**：确认 Claude Code CLI 已完成实现、测试与本地提交，并检查退出码与最终 stdout 后，才能进行后续机械验证
+
+      2. Claude Code 完成后:**机械验证**(不能跳过):
+         `bash ~/.openclaw/workspace/flowforge/scripts/verify-claims.sh <repo-dir> [expected-files...]`
+         expected-files = plan 阶段列出的变更文件。脚本检查:文件确实被修改(git diff)、没有遗留 unstaged changes、修改文件非空、无 conflict markers。
+         脚本返回 FAILED → 回去修,不要继续
+
+      3. Review commit 改动是否正确
+      4. 确保代码风格符合项目规范
+      5. **push 前自检**(不能跳过):
+         a. `git diff --stat` 看全局影响
+         b. 改了接口/类型?→ grep 所有 import 这个接口的文件,确认 mock/stub 同步了
+         c. 项目有测试命令?→ 跑。没有本地环境?→ 至少 grep 验证 mock 完整性
+
+      **🚩 Red Flags - 如果出现以下症状,你在赶工不是在实现:**
+      - 跳过了 plan 里的某个变更项但没说原因 → 你忘了或在回避
+      - push 前没跑测试就说"应该没问题" → 你在猜不是在验证
+      - 改了接口但没 grep 相关 mock/stub 文件 → CI 会告诉你
+      - CLI task 里没包含上下文(issue 讨论/维护者偏好)→ Claude Code 会猜着做
+
+      d. **Over-editing check**: 逐行审查 diff - 每一行改动都必须 trace back to the issue。如果发现改了不相关的变量名、格式、注释、import 顺序,revert 那些改动。
+
+      汇报实现结果和测试状态。
+    branches:
+      - condition: 竞争 PR 复查失败 — issue 已被修/有竞争 PR merged
+        next: cancel_task
+      - condition: 实现完成
+        next: pre_push_audit
+      - condition: Stale PR fast-path — 我的 PR 已存在且 CI 绿，跳过实现
+        next: pre_push_audit
+
+  cancel_task:
+    task: |
+      **实现阶段判定无法继续 — 记录原因、取消 task、结束本轮。**
+
+      1. 更新 Cove task 状态为 cancelled：
+      ```
+      cove_task(action: update, taskId: <TASK_ID>, status: "cancelled")
+      ```
+      2. 如果是因为被竞争 PR 抢先 → 记录到 finder rejection cache（防止重选）：
+      ```
+      bash ~/.openclaw/workspace/tools/finder-reject.sh add <owner/repo#number> "<原因>"
+      ```
+      3. 记录到 memory/当天日期.md。
+
+      这是 terminal 节点 — 后续由 work-scan 重新选题。
+    terminal: true
+
+  implement_manual:
+    task: |
+      Claude Code CLI 恢复路径（禁止手写实现）:
+
+      1. 检查上一次 Claude Code CLI 的退出码、最终 stdout、当前 repository diff 和 git log。
+      2. 在同一目标 repo/worktree 重新发起聚焦的 `claude --print --permission-mode bypassPermissions "<task>"`，让 Claude Code 完成剩余工作。
+      3. 若 CLI 返回非零或超时，报告具体 CLI blocker；不得直接手写实现，也不得以其他 harness 作为 fallback。
+      4. Claude Code CLI 成功完成后，运行 plan 与 implement 阶段要求的测试并确认通过。
+
+      汇报 CLI 的退出状态、最终结果、测试结果或具体 blocker。
+    next: submit
+
+  pre_push_audit:
+    task: |
+      **Default-FAIL 验证关卡** - 证据必须以文件形式存在,不接受口头声称。
+
+      核心原则:所有标准起始为 FALSE,只有 record 了非空证据文件才能翻为 TRUE。
+
+      **Step 1: 收集证据文件**(如果 implement 阶段没做完)
+      ```
+      DFG_DIR=/tmp/dfg-$(ls -td /tmp/dfg-* 2>/dev/null | head -1 | xargs basename)
+
+      # 1. verify-claims
+      bash ~/.openclaw/workspace/flowforge/scripts/verify-claims.sh <repo-dir> 2>&1 | tee /tmp/vc-out.txt
+      bash ~/.openclaw/workspace/flowforge/scripts/default-fail-gate.sh record $DFG_DIR verify-claims /tmp/vc-out.txt
+
+      # 2. test output
+      <test-command> 2>&1 | tee /tmp/test-out.txt
+      bash ~/.openclaw/workspace/flowforge/scripts/default-fail-gate.sh record $DFG_DIR test-output /tmp/test-out.txt
+
+      # 3. diff-stat
+      git diff --stat HEAD~1 2>&1 | tee /tmp/diffstat.txt
+      bash ~/.openclaw/workspace/flowforge/scripts/default-fail-gate.sh record $DFG_DIR diff-stat /tmp/diffstat.txt
+
+      # 4. interface check
+      echo 'No interface changes' > /tmp/iface.txt  # or: grep -r 'import.*MyInterface' . > /tmp/iface.txt
+      bash ~/.openclaw/workspace/flowforge/scripts/default-fail-gate.sh record $DFG_DIR interface-check /tmp/iface.txt
+      ```
+
+      **Step 2: 运行 Default-FAIL gate verify**
+      ```
+      bash ~/.openclaw/workspace/flowforge/scripts/default-fail-gate.sh verify $DFG_DIR
+      ```
+      - ALL PASSED → 通过,去 submit
+      - BLOCKED → 哪个 criterion 是 FALSE 就补哪个,不通过
+
+      **Step 3: plan 对照**
+      plan 阶段列了 N 个变更项,逐项打勾 ✅ 或说明为什么跳过。
+
+      **Step 4: Fresh-Context Review**
+      Builder 不应给自己的代码打分。用独立 agent 从干净上下文审查 diff:
+      ```
+      bash ~/.openclaw/workspace/flowforge/scripts/fresh-context-review.sh <repo-dir> <base-ref>
+      ```
+      - PASS → 继续
+      - NEEDS_WORK → 读 findings，**先验证 reviewer 假设再行动**: (1) 对每个 HIGH finding：验证 reviewer 的前提假设是否正确 (2) 假设正确 → 必须修 (3) 假设错误 → 标记 false positive，记录到 gradient，继续
+      - 修完后重新跑 review 直到 PASS（或所有 HIGH findings 已验证为 false positive）
+
+      **判定规则:**
+      - gate verify 返回 ALL PASSED + fresh-context review PASS + plan 对照完整 → 通过
+      - gate verify 返回 BLOCKED → 不通过,回 implement 补证据
+      - "应该没问题""测试太慢跳过了""改动很小不需要测" → 不通过
+    branches:
+      - condition: 所有证据齐全,验证通过
+        next: submit
+      - condition: 证据不足,需要补充
+        next: implement
+
+  submit:
+    task: |
+      **提交前再次检查 PR 数量**(硬性,不能跳过):
+      ```
+      gh pr list --repo <owner/repo> --author=kagura-agent --state=open --json number -q 'length'
+      ```
+      如果结果 **≥ 5** → **停止,不提交 PR**。汇报"PR 数量已达上限,放弃本轮"，走 cancel_task。
+
+      确认 < 5 后再继续:
+
+      **AI 身份透明化(新 repo 首次 PR 必做):**
+      检查 wiki/projects/<项目名>.md 里的关系状态。如果是 new(没提过 PR 或没有 wiki 笔记):
+      PR 描述末尾加上:
+      > 🤖 **Disclosure:** This PR was authored by [Kagura](https://github.com/kagura-agent), an AI agent. Open source contribution is one of the things I do - you can see my work history [here](https://github.com/kagura-agent/github-contribution). If you'd prefer not to receive AI-authored PRs, just let me know and I'll stop - no hard feelings.
+
+      如果关系已是 established(有 merged PR)→ 不需要重复自我介绍,但保留 bot 标识。
+
+      **提交前复盘检查**(cat wiki/cards/code-review-lessons.md + pr-superseded-lessons.md 快速扫一遍):
+      - 我是在修根因还是绕症状?调用层有没有内置方案?
+      - 有没有绕过项目已有的安全/权限模式?
+      - related issues 能不能合并?`gh pr list --search` 有没有竞争 PR?
+      - bot review 建议在提交前就能避免的问题?
+
+      1. push 分支到 fork
+      2. 创建 PR,标题清晰,描述写明改了什么、为什么、怎么测的
+      3. 关联 issue(Closes #XX)
+      4. 用 gogetajob import 记录这个 PR
+
+      **更新 Cove task 状态为 in_review**（PR 已提交，等 review）＋**调大 heartbeat 到 12h**（等 review 无需高频盯）：
+      ```
+      cove_task(action: update, taskId: <TASK_ID>, status: "in_review", heartbeatIntervalMs: 43200000)
+      ```
+      ⚠️ 自调节原则：heartbeat 频率跟随工作阶段。等外部输入（review/审批/维护者）→ 调大；
+      自己手里有活（改代码/迭代）→ 调回 2h。大模型在同一 task thread 上下文里最清楚该多久查一次。
+
+      汇报 PR 链接。
+    branches:
+      - condition: PR 已成功提交
+        next: verify
+      - condition: PR 数量已达上限,放弃本轮
+        next: cancel_task
+
+  verify:
+    task: |
+      **只检查本轮刚提交的那一个 PR,不做任何其他事。**
+
+      等 3-5 分钟,然后:
+      1. CI 是否通过?
+      2. 有没有自动化 review(CodeRabbit 等)?
+      3. 如果 review 有简单修复建议 → 修改并 push 到同一个 PR
+
+      **禁止事项:不创建新 PR,不修复其他 issue,不做本轮 PR 以外的任何工作。**
+
+      **（收到反馈开始改代码 → 走 implement 前，先 `cove_task update` 把 heartbeat 调回 2h 密集盯：heartbeatIntervalMs: 7200000）**
+
+      汇报本轮 PR 的 CI 和 review 状态。
+    branches:
+      - condition: CI 通过,review 反馈已处理(或没有反馈)
+        next: reflect
+      - condition: 有问题需要修改
+        next: implement
+
+  reflect:
+    task: |
+      **反思本轮打工并更新项目笔记**(不能跳过):
+
+      **第一步:更新wiki 笔记**(必须做)
+      编辑 ~/.openclaw/workspace/wiki/projects/<项目名>.md,追加:
+      - 这次 PR 的结果(merged/pending/closed + 原因)
+      - 维护者的 review 风格和偏好(新发现的)
+      - **维护者 PR 模式**:他们怎么写测试、处理边界、描述 PR?(下次 study 要读这些)
+      - CI/lint/测试的注意事项
+      - 踩过的坑
+      - 下次打这个 repo 该注意什么
+      然后:cd ~/.openclaw/workspace/wiki && git add -A && git commit -m "update: <项目名> wiki notes" && git push
+
+      **第二步:Acontext distillation 反思**
+
+      **成功分析**(什么有效):
+      - goal: 这轮要做什么?
+      - approach: 什么方法有效?
+      - key_decisions: 哪些选择起了作用?
+      - pattern: 可复用的模式(选题策略、代码方法、沟通方式)
+      - applies_when: 具体适用条件(哪个项目、什么类型的 issue)
+
+      **目标漂移检查 (Ĵ≠J*)**: Ĵ(我理解的目标) vs J*(实际需要): 一致吗?有没有"自信地解决了错误问题"的迹象?
+
+      **失败分析**(哪里卡了):
+      - failure_point: 卡在哪?
+      - flawed_reasoning: 错误假设
+      - what_should_have_been_done: 正确做法
+      - prevention_principle: 怎么防
+
+      **沉淀分流**(按性质选最佳载体,所有笔记用 [[双链]] 互引):
+      - **项目级 pattern** → wiki/projects/项目名.md
+      - **跨项目洞察** → memex 卡片 (写完后: cd ~/.openclaw/workspace/wiki && git add -A && git commit -m "card: 卡片名" && git push)
+      - **行为级 pattern** → beliefs-candidates.md(梯度收集)
+      不确定的先放 wiki,重复出现再考虑升级。
+
+      **第 2.5 步:强制写 gradient**(不能跳过)
+      ⚠️ 每轮打工必须至少写 1 条 gradient 到 beliefs-candidates.md,哪怕很短。
+      使用 add-gradient.sh 写入(统一入口,自动去重 + JSONL 日志):
+      ```
+      bash ~/.openclaw/workspace/tools/add-gradient.sh \
+        --gradient '<具体的行为级教训>' \
+        --pattern '<pattern-name>' \
+        --source workloop \
+        --trigger '<什么时候会触发>' \
+        --fix '<下次怎么做不同>'
+      ```
+      ⛔ 如果你觉得"这轮没什么好写的"--这本身就是一个 gradient:你在合理化跳过。写下来。
+
+      **工具检查**: gogetajob、gh、flowforge 等有没有问题?有 bug → 去工具 repo 提 issue 或自己修。
+
+      把反思结果记到 memory/YYYY-MM-DD.md。
+
+      **第三步:更新贡献准则和工作流**(飞轮闭环)
+      回顾 ~/.openclaw/workspace/wiki/github-contribution/guide.md 和 workloop-exec.yaml 本身:
+      流程有没有卡的地方、多余的步骤、缺失的检查?如果有 → 更新。
+      更新后 git commit + push。
+
+      **第四步:更新 TODO**(改进点进入待办)
+      读 TODO.md「🔧 GitHub Contribution(精进)」section，加入本轮发现的改进点，删掉已完成的。
+    next: gradient_gate
+
+  gradient_gate:
+    task: |
+      **梯度提取验证门**(结构性强制,不可跳过)
+
+      检查 beliefs-candidates.md 在本轮是否被修改:
+      ```
+      git -C ~/.openclaw/workspace diff HEAD -- beliefs-candidates.md | head -20
+      ```
+      如果有 diff(新增了 gradient 条目)→ 通过,继续。
+      如果没有 diff → **你跳过了 reflect 里的梯度提取步骤。现在补写。**
+      写完后 commit:
+      ```
+      cd ~/.openclaw/workspace && git add beliefs-candidates.md && git commit -m "gradient: <标题>"
+      ```
+    next: done
+
+  fallback_offline:
+    task: |
+      网络/API 不可用,无法正常打工。转为离线有效工作:
+      1. **整理已有 PR**:读本地 git log,检查有没有未 push 的 commit
+      2. **更新 wiki 笔记**:读 wiki/projects/ 下的笔记,补充遗漏的维护者模式、测试命令等
+      3. **读代码**:选一个常打的 repo,深读一个模块,写笔记
+      4. **整理 beliefs-candidates**:有没有重复 3 次以上但还没升级的 gradient?执行升级
+
+      产出必须有:至少一个文件被修改并 commit。
+
+      **Task 状态**:保持 in_progress 不变（网络恢复后由心跳继续驱动）。
+    next: done
+
+  done:
+    task: |
+      **收尾：更新 task 状态 + 记录。**
+
+      1. 更新 Cove task 状态为 done：
+      ```
+      cove_task(action: update, taskId: <TASK_ID>, status: "done")
+      ```
+      2. 记录今天的工作到 memory/当天日期.md（PR 链接、task_id、结果）。
+      3. 汇报本轮成果。
+    terminal: true

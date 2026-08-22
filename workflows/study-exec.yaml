@@ -1,0 +1,167 @@
+name: study-exec
+description: '学习执行层 — 一个 Cove task 对应一个实例，只做研究不做选题。由 task heartbeat 驱动。
+
+  架构定位（2026-08-21 迁移设计，与 workloop-exec 对称）：
+  - 扫描层：study-scan.yaml（侦察/快速扫描/跟进 → 建「研究: X」/「应用: X」task）
+  - 执行层（本 workflow）：deep_read → note → reflect，产出 = wiki 笔记/card/工具改动
+  - 生命周期：task in_progress（启动本实例）→ 产出物 commit + push → done
+  - 原版 study.yaml 保留不动（单轮循环模式），本文件是 task 级执行变体
+
+  核心原则：task = 一个学习工作单元。done 标准 = 产出物 commit（笔记/card commit + push），
+  不追求"研究透了"。执行由 task heartbeat 驱动，研究中途可跨多轮。
+  '
+start: study_task
+
+nodes:
+  study_task:
+    task: |
+      **确认 task 上下文 + 研究课题。**
+
+      **Step 0: Task 上下文读取（每次必做）**
+      - 从 task description / thread 首条消息拿课题内容（研究什么/应用什么/学习什么）
+      - 确认 task 状态是 in_progress（若不是，先用 cove_task update 转 in_progress）
+      - 提取课题关键词
+
+      **Step 1: 确定任务类型**（从 task 标题前缀识别）：
+      - 「研究: X」→ 深读项目/方向 → 本节点做 deep_read 工作
+      - 「研究贡献者: X」→ 分析贡献者模式 → 本节点做 contributor 分析
+      - 「跟进: X」→ delta 研究（项目已有笔记，只读新变化）
+      - 「应用: X」→ 改工具/流程/验证假设 → 跳 apply 分支
+      - 「学习: X」→ 按任务详情执行
+
+      **Step 2: 先读已有知识（不可跳过，即使觉得已经知道）**：
+      - wiki/projects/<课题名>.md（如果有，带着上次的认知进入）
+      - `bash ~/.openclaw/workspace/wiki/search.sh "<关键词>" --limit 5`（hybrid: semantic + keyword）
+      - **backlink 扩展**：对命中的卡片跑 `cd ~/.openclaw/workspace/wiki && MEMEX_HOME=. memex backlinks <slug>`
+
+      **Step 3: 如果是新项目/方向**：
+      - 以有界等待 clone，读 README、架构文档、核心模块；clone 停滞时停止，改用 `gh api` 读 git tree
+      - **先读 test 文件**：test/ 目录往往比文档更准确展示 API 用法
+      - **扫 Issues 找批评者**（⚠️ 高效捷径）：`gh issue list -R owner/repo --state all --limit 20 --json title,body,author,labels,comments`
+        一条高质量批评 = 数小时源码阅读（mirage/@eouzoe 05-09 洞察）
+
+      **Step 4: 如果是已关注项目（跟进/delta）**：
+      - `gh api repos/<repo>/commits?since=<上次验证日期>` 看新变化
+      - 追加 delta 笔记而非重读
+
+      **Step 5: 如果是贡献者研究**：
+      - `gh pr list --author X --state merged` 列出最近 merged PR
+      - 分析：选题策略 / PR 大小和周转 / 沟通方式 / 跨项目还是深耕
+      - 提炼可复用策略
+
+      **Step 6: 如果是应用（改工具/流程）**：
+      - 读 unapplied.md / IDEAS.md 相关条目
+      - 具体执行：改工具代码（gogetajob/FlowForge/nudge）、改工作流、验证假设
+      - 改完必须验证「跟改之前有什么不同」
+      - **回归门控**：改了 tools/ 或 wiki/scripts/ 下文件 → `bash tools/regression-gate.sh`
+
+      **🚩 Red Flags — 走形式信号**（同原版）：
+      - 笔记大段引用 README 没有自己的分析 → 搬运不是理解
+      - 没看过一个 test 文件 → 只读了宣传材料
+      - 写不出"跟我们方向的关联" → 读完了但没思考
+      - "应用"只是在文件里加注释 → 那是写笔记不是应用
+      - 改完后说不出"跟之前有什么不同" → 做了但没验证
+
+      汇报理解、发现、下一步（写笔记/应用改动）。
+    branches:
+      - condition: 研究/分析完成，准备写产出
+        next: note
+      - condition: 应用类改动完成
+        next: verify_apply
+      - condition: 课题不可行（方向已死/无新信息/重复研究）
+        next: cancel_task
+
+  verify_apply:
+    task: |
+      **应用改动验证 + 产出**：
+      1. 验证改动效果：跑相关测试/命令，确认行为变化
+      2. 跑回归门控（如果改了 tools/ 或 wiki/scripts/）：
+         `bash tools/regression-gate.sh`
+      3. 把改动和效果写进 wiki 笔记（应用记录）
+
+      **🚩 如果验证失败** → 修到通过，或如实记录失败原因（不掩盖）。
+      完成后 → note 节点写产出。
+    next: note
+
+  note:
+    task: |
+      **把学到的东西写进产出物**（task 的 done 标准）：
+      1. 新项目 → wiki/projects/ 创建新文件
+      2. 已有项目 → 追加新发现，不重复已有内容
+      3. 应用改动 → 记录改动 + 效果到相关笔记
+      4. 写作要求：
+         - 用 [[双链]] 引用相关笔记和 memex 卡片
+         - 记这个项目在 agent 生态中的位置、跟我们方向的关联、架构洞察和反直觉发现
+      5. **跨项目/领域级洞察 → memex 卡片**（知识网络核心节点）
+      6. git commit && git push 到 kagura-agent/wiki
+      7. **Log predictions**（if any checkable claims surfaced）：`bash tools/calibration-log.sh predict "<prediction>" --confidence high|medium|low --context study --due <date>`
+
+      **⛔ Anti-rationalization table — 不要跳过笔记：**
+      | 借口 | 反驳 |
+      |---|---|
+      | "这轮没什么新的，不用写" | 没有新发现本身就是信号。写 1 行趋势判断 |
+      | "已经在 memory 里写过了" | memory 是日志，wiki 是知识库。日志不替代结构化笔记 |
+      | "只是小更新，不值得单独 commit" | 追加 3-5 行 + commit 只要 30 秒 |
+
+      汇报写了什么（文件路径 + commit）。
+    next: reflect
+
+  reflect:
+    task: |
+      用 Acontext distillation 结构化反思本轮学习：
+
+      **成功分析**（学到了什么）：
+      - goal: 这个课题要解决什么问题？
+      - approach: 什么方法有效？
+      - key_decisions: 哪些选择起了作用？
+      - pattern: 可复用的模式是什么？
+      - applies_when: 具体适用条件
+
+      **失败分析**（哪里卡了）：
+      - failure_point: 卡在哪？
+      - flawed_reasoning: 错误假设
+      - what_should_have_been_done: 正确做法
+      - prevention_principle: 怎么防
+
+      **沉淀分流**（三层）：
+      - 项目级知识 → wiki/projects/项目名.md（已在 note 完成）
+      - 跨项目洞察 → memex 卡片（已在 note 完成）
+      - 学习方法 pattern → `bash ~/.openclaw/workspace/tools/add-gradient.sh --gradient "<pattern>" --pattern "<pattern-name>" --source study --fix "<行为改变>"`
+
+      **Gradient 自检**（不可跳过）：
+      至少回答：工具有摩擦吗？执行中发现什么 pattern？有没有可自动化的重复？
+      任一 yes → add-gradient.sh 记录。全 no → 写一句解释（这本身是信号）。
+
+      **📊 Outcome Logging**（不可跳过）：
+      `bash tools/study-outcome-log.sh --mode <research|apply|followup> --outcome <signal|partial|empty> [--tag <tag>] [--note "简短说明"]`
+
+      记录到 memory/YYYY-MM-DD.md。
+    next: done
+
+  cancel_task:
+    task: |
+      **课题不可行 — 取消 task、记录原因、结束。**
+
+      1. 记录原因到 memory/当天日期.md（方向已死/无新信息/重复研究）
+      2. 更新 Cove task 状态为 cancelled：
+         ```
+         cove_task(action: update, taskId: <TASK_ID>, status: "cancelled")
+         ```
+      3. 如果课题方向已死 → 记到 wiki 笔记，避免下次扫描又选中
+
+      terminal 节点 — 后续由 study-scan 重新选题。
+    terminal: true
+
+  done:
+    task: |
+      **收尾：更新 task 状态 + 记录。**
+
+      1. 确认产出物已 commit + push（wiki 笔记/card/工具改动）：
+         `cd ~/.openclaw/workspace/wiki && git status` — 确认无未提交改动
+      2. 更新 Cove task 状态为 done：
+         ```
+         cove_task(action: update, taskId: <TASK_ID>, status: "done")
+         ```
+      3. 记录到 memory/当天日期.md（课题、产出物路径、commit）
+      4. 汇报本轮成果（一句话：研究了什么、产出了什么）。
+    terminal: true
