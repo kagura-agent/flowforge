@@ -1,0 +1,236 @@
+name: work-scan
+description: '打工扫描层 — 只做选题 + 建 task，不做实现。替代 work-loop cron 的完整循环 + workloop-night 的 PR 跟进。
+
+  架构定位（2026-08-21 迁移设计）：
+  - 扫描层（本 workflow）：followup 跟进 + find_work 选题 + capacity gate + pr_gate 机械预检
+    → 输出 = 一个 Cove task（一 PR 一 task 一 thread）
+  - 执行层：workloop.yaml（瘦身后）以 task 级实例运行，由 Cove task 心跳驱动
+  - 夜间 PR followup：完全由 task heartbeat 覆盖（24h 触发），workloop-night.yaml 退役
+
+  核心原则：扫描层不实现任何代码。建 task 后即完成本轮，实现交给 task 生命周期。
+  '
+start: align
+
+nodes:
+  align:
+    task: |
+      **读准则**：cat ~/.openclaw/workspace/github-contribution/guide.md - 理解为什么打工、两条腿走路、选题原则。
+
+      **DNA Preflight**（不能跳过）：
+      `bash tools/dna-preflight.sh --context workloop --days 3`
+
+      **Cove 上下文**：确认 #work 频道存在（channelId 见下），task 都建在那里。
+
+      #work channelId: 1540181115191427072
+    next: followup
+
+  followup:
+    task: |
+      **Step 0: 已承诺 issue 检查**（不能跳过）
+      被 assign 了 = 承诺了。承诺了没做 = 比没认领还差。
+      ```
+      gh search issues --assignee=kagura-agent --state=open --json repository,number,title,updatedAt
+      ```
+      **⚠️ task = 一个工作单元**：task 必须是「解决 issue → 提 PR → merged」的完整工作，
+      不是状态跟踪器。unassign 跟进、等 review 这类「等别人动作」的事项**不建 task**。
+
+      对每个 assigned issue：
+      - 有对应 open PR → 已在做，跳过（应有对应 task；没有则是异常，查 task 为什么丢）
+      - 没有 PR → **未兑现的承诺，当场二选一**：
+        a. **值得做**（可完成、有动机、容量允许）→ 建工作型 task 认领它（见 create_task 节点）
+        b. **不值得做 / 做不了**（上游问题、太复杂、已请求过 unassign）→ **直接走 unassign 流程**：
+           - 在 issue 下评论放弃原因（"I won't be able to work on this, please unassign me"），
+             若之前已评论过则跳过
+           - 尝试 `gh issue unassign` 自行取消；API 403 时记录 blocker 到 memory（不建 task）
+           - 处理完即结束，**不建 task**
+      ⚠️ 排除列表（已穷尽手段、不再报告）：
+      - NVIDIA/NemoClaw#3836 — 4次 unassign 请求无回应，API 403 无法自操作
+
+      **Step 1: 已有 task 状态检查**
+      列出 #work 频道所有 open 状态的 task：
+      - in_progress → 心跳在盯，跳过
+      - in_review → 心跳在盯，跳过
+      - 卡在 open 超过 24h 没动静 → 检查是否有对应 flowforge 实例；没有就补建实例并推进
+
+      **Step 2: 全量 PR 状态检查（兜底交叉验证）**
+      ```
+      gh search prs --author=kagura-agent --state=open --json repository,number,title,updatedAt
+      ```
+      对比上一步的 task 列表：
+      - PR 存在但没对应 task → **迁移期例外**：这是 task 先于 PR 的架构被打破的异常信号
+        （task 丢了 / 漏建 / 历史存量）。补建「PR 跟进」task 盯到 merged，并记一条 gradient。
+      - 每个有新 review 或 CI 失败的 PR → 确认对应 task 是 in_review 状态（心跳会处理），不是 open/in_progress 漏检
+
+      **Step 3: 输出汇总**
+      输出：assigned issue 数、open task 数、open PR 数、是否有漏网（无 task 的 PR/issue）。
+      判断走哪个分支。
+    branches:
+      - condition: 有未兑现 assigned issue 且没有 task → 需要建 task 认领
+        next: create_task
+      - condition: 有漏网的 PR/issue（有 PR 无 task，或有 assigned issue 无 task）→ 需要补建 task
+        next: create_task
+      - condition: 所有承诺都有 task，所有 task 状态健康 → 找新活
+        next: find_work
+      - condition: gogetajob/gh 命令失败(网络、认证、API 限流)
+        next: fallback_offline
+
+  create_task:
+    task: |
+      **建「工作型」Cove task**（task = 一个完整工作单元，不建状态跟踪器）：
+
+      1. 只有两种情况建 task：
+         - **工作型**（常态）：未兑现的 assigned issue 且判定「值得做」
+           → 标题「实现: <repo>#<n> <标题>」
+           → description：issue 链接 + 验收标准 + 执行路径（heartbeat 触发后 in_progress → flowforge workloop-exec 走 study→plan→implement→submit→verify→reflect → in_review → merged 后 done）
+         - **PR 跟进型**（迁移期例外）：已有 open PR 但无对应 task
+           → 标题「PR 跟进: <repo>#<n> <标题>」
+           → description：PR 链接 + 当前 review/CI 状态 + 目标（盯到 merged 后 done）
+      2. 用 cove_task 工具创建：
+         ```
+         cove_task(action: create, channelId: "1540181115191427072", title: "...", assigneeId: "1522505958230589440", description: "...", heartbeatIntervalMs: 7200000)
+         ```
+         assigneeId = Kagura 自己的 user id（1522505958230589440）
+         heartbeat 2h — 保证静默时自动跟进
+      3. 建完一个就检查还有没有下一个。全部建完 → followup 重新检查。
+
+      ⚠️ 这里只建 task，不开始实现。实现由 task 的 heartbeat 驱动（task 收到后 in_progress → 走执行层）。
+      ⚠️ **不建 task 的情况**：unassign 跟进、等 review、等维护者动作——这些当场处理或记 blocker，不进 task 系统。
+    branches:
+      - condition: 建完所有缺失的 task
+        next: followup
+
+  find_work:
+    task: |
+      **⚠️ Capacity Gate**（不能跳过）：
+      ```
+      ASSIGNED=$(gh search issues --assignee kagura-agent --state open --json number --jq "length")
+      OPEN_PRS=$(gh search prs --author kagura-agent --state open --json number --jq "length")
+      echo "Assigned: $ASSIGNED | Open PRs: $OPEN_PRS"
+      ```
+      **硬规则：** 如果 assigned > 2 且对应的 open PR 数量 < assigned - 1，
+      说明有大量已认领但未动手的 issue。**禁止认领新 issue，本轮结束。**
+      输出 capacity check 结果作为证据。通过后继续 ↓
+
+      **找新活**：
+      ```
+      bash ~/.openclaw/workspace/github-contribution/scripts/run-workloop-step.sh \
+        --label find-work -- bash ~/.openclaw/workspace/tools/workloop-find-issue.sh
+      ```
+      读脚本输出的 RECOMMENDED ISSUES 列表，记录 FINDER_RESULT 和退出码。
+
+      **选择规则**：
+      - 脚本推荐 #1 → 优先选它，除非有明确理由选别的
+      - 优先级：P1(openclaw) > P2(NemoClaw) > P3(其他)
+      - 同 tier 内：bug > test > doc > feature
+      - 选有 wiki 笔记的 repo 优先
+
+      **Finder contract**：
+      - 每次先执行有界的增量 scan；成功时更新结构化 cache
+      - tracked scan 与 cache 都不可用、或 cache 无效/过期 → FINDER_RESULT=UNAVAILABLE (exit 2) → fallback_offline
+      - 有效结构化 feed 输出 "NO VIABLE ISSUES" (exit 0) → discover 分支
+      - 黑名单 repo：mastra-ai/mastra — anti-AI-PR policy
+
+      汇报选中的 issue 和理由。
+    branches:
+      - condition: 找到了合适的 issue
+        next: pr_gate
+      - condition: FINDER_RESULT=UNAVAILABLE 或退出码 2
+        next: fallback_offline
+      - condition: 有效空 feed "NO VIABLE ISSUES"（退出码 0）
+        next: discover
+      - condition: gogetajob/gh 命令失败(网络、API 限流)
+        next: fallback_offline
+
+  pr_gate:
+    task: |
+      **机械预检关卡** - 脚本说 FAIL 就不准继续。
+      ```
+      bash ~/.openclaw/workspace/flowforge/scripts/preflight-repo.sh <owner/repo> <issue_number>
+      ```
+      脚本自动检查:
+      1. ≤ 3 open PRs from kagura-agent
+      2. Repo 最近 14 天有活动
+      3. 没有竞争 PR
+      4. Repo 大小 ≤ 500MB
+      5. Wiki 没有 blocklist 标记
+
+      **结果判断:**
+      - PREFLIGHT PASSED → 通过，继续（建 task）
+      - PREFLIGHT FAILED → 回 find_work 重选
+      - 有 WARN → 通过但在汇报里说明
+
+      粘贴脚本完整输出作为证据。汇报:repo 名、preflight 结果。
+    branches:
+      - condition: 通过(open PR ≤ 3 且 repo 接受外部 PR)
+        next: create_work_task
+      - condition: 不通过(open PR > 3 或 repo 不接受外部 PR)
+        next: find_work
+
+  create_work_task:
+    task: |
+      **核心动作：把选中的 issue 建成 Cove task**（扫描层的最终产出）：
+
+      1. 用 cove_task 创建：
+         ```
+         cove_task(action: create, channelId: "1540181115191427072", title: "<repo>#<n> <标题>", assigneeId: "1522505958230589440", description: "Issue: <url>\n\n【task 级执行】heartbeat 触发后：in_progress → 启动 flowforge workloop 实例（study→plan→implement→submit→verify→reflect）→ in_review → merged 后 done", heartbeatIntervalMs: 7200000)
+         ```
+      2. 记录返回的 task_id 到 memory/当天日期.md
+      3. **不启动 flowforge workloop 实例** — 等 task heartbeat 触发（或 task 收到后手动 in_progress 时再启动）
+
+      ⚠️ 扫描层到此为止。不 study、不 plan、不 implement。实现是 task 生命周期的事。
+    branches:
+      - condition: task 创建成功
+        next: done
+      - condition: task 创建失败（API 错误等）
+        next: report_error
+
+  discover:
+    task: |
+      已有项目没有合适的 issue,去外面找新项目加入关注列表。
+      **策略：广泛发现，窄而深地承诺。**
+
+      **⏱️ 冷却门控**（防重复空转，08-22 教训）：
+      - 先查今天 memory 是否已有「discover 无新项目」记录；若距上次全量 discover < 4h → **跳过全量查询**，
+        只跑一次 GitHub Trending 快扫看有没有新面孔（`gh search repos --sort=updated --created=">=$(date -d '-3 days' +%F)" --limit 10`），
+        没有就汇报「冷却期内，候选与上轮一致，无新项目」并直接结束。
+      - 冷却期内的重复全量扫描（同一批候选反复评估）是空转——候选集 4h 内不会变，重跑不产生新信息。
+
+      1. `gogetajob discover --language TypeScript --min-stars 100 --active-days 14 --limit 10 --topic ai-agent`
+      2. `gogetajob discover --language Python --min-stars 100 --active-days 14 --limit 10 --topic agent`
+      3. 若结果不合适，扩展查询到至少两个相邻方向（llm-observability / ai-evaluation / developer-tools / workflow-automation）
+      4. 对照 guide.md 的选题原则,筛选对齐方向的项目
+      5. 找到合适的 → `gogetajob scan owner/repo` 加入关注列表
+
+      汇报搜索范围、发现了什么新项目、加入了哪些；没有结果时说明已覆盖的方向。
+    branches:
+      - condition: 加入了新项目
+        next: find_work
+      - condition: 没找到合适的新项目
+        next: done
+      - condition: 网络/API 故障,无法搜索
+        next: fallback_offline
+
+  fallback_offline:
+    task: |
+      网络/API 不可用,无法正常打工。转为离线有效工作:
+      1. **整理已有 PR**:读本地 git log,检查有没有未 push 的 commit
+      2. **更新 wiki 笔记**:读 wiki/projects/ 下的笔记,补充遗漏的维护者模式、测试命令等
+      3. **读代码**:选一个常打的 repo,深读一个模块,写笔记
+      4. **整理 beliefs-candidates**:有没有重复 3 次以上但还没升级的 gradient?执行升级
+
+      产出必须有:至少一个文件被修改并 commit。
+    next: done
+
+  report_error:
+    task: |
+      建 task 失败。记录错误到 memory/当天日期.md，标注为「⚠️ 扫描层异常：task 创建失败」。
+      汇报错误原因和重试建议。
+    terminal: true
+
+  done:
+    task: |
+      扫描层本轮完成。记录到 memory/当天日期.md：
+      - 建了哪些 task（issue/PR → task_id）
+      - 状态汇总（assigned / open tasks / open PRs）
+      汇报本轮成果。
+    terminal: true
